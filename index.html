@@ -75,12 +75,94 @@
         <section class="categories container">
             <h2 class="section-title" data-i18n="sections">الأقسام</h2>
             <div class="categories-grid" id="categories-list"></div>
+
         </section>
 
         <!-- Products -->
         <section class="products container" id="products">
-            <h2 class="section-title" data-i18n="best_sellers">الألعاب الأكثر مبيعاً</h2>
-            <div class="products-grid" id="products-list"></div>
+            <div class="products-header"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 class="section-title" style="margin-bottom: 0;" data-i18n="best_sellers"
+                    id="products-section-title">الألعاب الأكثر مبيعاً</h2>
+                <button class="btn-primary" id="toggle-filter-btn"
+                    style="display: none; padding: 8px 15px; width: auto; font-size: 0.9rem; background: #222; color: #fff; border: 1px solid #444;"
+                    onclick="toggleFiltersMobile()">
+                    <i class="fa-solid fa-filter" style="color: var(--accent);"></i> <span
+                        data-i18n="filter">تصفية</span>
+                </button>
+            </div>
+
+            <div class="shop-container" style="display: flex; gap: 30px; align-items: flex-start;">
+                <!-- Filter Sidebar -->
+                <aside class="shop-filters" id="shop-filters"
+                    style="display: none; width: 280px; background: #0a0a0a; border: 1px solid #222; border-radius: 12px; padding: 25px; flex-shrink: 0;">
+
+                    <!-- Filter By Price -->
+                    <h3 style="color: #fff; margin-bottom: 15px; font-size: 1.1rem; font-family: 'Orbitron', 'Inter', sans-serif; display: flex; align-items: center; gap: 10px;"
+                        data-i18n="filter_price">
+                        <i class="fa-solid fa-coins" style="color: var(--accent);"></i> تصفية حسب السعر
+                    </h3>
+
+                    <div class="price-filter"
+                        style="margin-bottom: 30px; border-bottom: 1px solid #222; padding-bottom: 25px;">
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.85rem; color: #888; display: block; margin-bottom: 5px;">الحد
+                                    الأدنى</label>
+                                <div style="position: relative;">
+                                    <input type="number" id="min-price-input" value="0" min="0"
+                                        style="width: 100%; background: #111; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 8px; font-family: 'Inter', sans-serif;">
+                                    <span
+                                        style="position: absolute; left: 10px; top: 10px; color: #666; font-size: 0.8rem;">دج</span>
+                                </div>
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.85rem; color: #888; display: block; margin-bottom: 5px;">الحد
+                                    الأقصى</label>
+                                <div style="position: relative;">
+                                    <input type="number" id="max-price-input" value="25000" min="0"
+                                        style="width: 100%; background: #111; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 8px; font-family: 'Inter', sans-serif;">
+                                    <span
+                                        style="position: absolute; left: 10px; top: 10px; color: #666; font-size: 0.8rem;">دج</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn-primary"
+                            style="width: 100%; padding: 10px; font-size: 0.95rem; font-weight: bold; border-radius: 6px;"
+                            onclick="applyFilters()" data-i18n="apply">تأكيد الفلترة</button>
+                    </div>
+
+                    <!-- Categories Dropdown (Similar to image) -->
+                    <h3 style="color: #fff; margin-bottom: 15px; font-size: 1.1rem; font-family: 'Orbitron', 'Inter', sans-serif; display: flex; align-items: center; gap: 10px;"
+                        data-i18n="categories">
+                        <i class="fa-solid fa-layer-group" style="color: var(--accent);"></i> الأقسام
+                    </h3>
+                    <div class="category-filter" style="position: relative;">
+                        <!-- Using a styled select box to match user request -->
+                        <select id="sidebar-category-select" onchange="applyFilters()"
+                            style="width: 100%; background: #111; color: #fff; border: 1px solid #333; padding: 12px 15px; border-radius: 8px; appearance: none; cursor: pointer; font-family: inherit;">
+                            <option value="all" data-i18n="all_items">كامل المنتجات</option>
+                            <!-- Injected via JS -->
+                        </select>
+                        <i class="fa-solid fa-chevron-down"
+                            style="position: absolute; left: 15px; top: 15px; color: #666; pointer-events: none;"></i>
+                    </div>
+                </aside>
+
+                <!-- Product Grid Area -->
+                <div style="flex: 1; width: 100%;">
+                    <div class="products-grid" id="products-list"></div>
+
+                    <div id="all-games-btn-container" style="text-align: center; margin-top: 40px; display: none;">
+                        <button class="btn-primary all-games-btn" onclick="openAllGames()"
+                            style="padding: 12px 40px; font-size: 1.2rem; display: inline-flex; align-items: center; justify-content: center; gap: 12px; width: auto; border-radius: 25px; font-weight: bold; background: var(--accent); color: #000;">
+                            <span data-i18n="all_games">عرض كل الألعاب</span> <i class="fa-solid fa-gamepad"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 

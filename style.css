@@ -796,6 +796,64 @@ footer {
     color: rgba(255, 255, 255, 0.6);
 }
 
+/* --- ALL GAMES SHOP LAYOUT & FILTER --- */
+@media (max-width: 768px) {
+    .shop-container {
+        flex-direction: column;
+    }
+
+    .shop-filters {
+        width: 100% !important;
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        box-shadow: none !important;
+        z-index: 1 !important;
+        margin-bottom: 20px;
+    }
+
+    #toggle-filter-btn {
+        display: inline-block !important;
+    }
+}
+
+.custom-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    background: #1a1a1a;
+    outline: none;
+    border-radius: 4px;
+    border: 1px solid #333;
+}
+
+.custom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--accent);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 2px solid #000;
+}
+
+.custom-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--accent);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 2px solid #000;
+}
+
+.all-games-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(171, 255, 0, 0.3) !important;
+}
+
 /* --- IMAGE VIEWER MODAL FIXED OVERLAY --- */
 #image-viewer-modal {
     display: none;
@@ -894,4 +952,191 @@ footer {
     display: flex !important;
     gap: 12px !important;
     visibility: visible !important;
+}
+
+/* --- COMPREHENSIVE MOBILE RESPONSIVENESS FIXES --- */
+@media (max-width: 768px) {
+
+    /* Header & Nav */
+    .nav-wrapper {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+        padding-bottom: 10px;
+    }
+
+    .logo h1 {
+        font-size: 1.3rem;
+    }
+
+    nav {
+        width: 100%;
+        order: 3;
+        margin-top: 10px;
+    }
+
+    nav ul {
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    nav a {
+        font-size: 0.85rem;
+    }
+
+    .nav-actions {
+        order: 2;
+        gap: 15px;
+    }
+
+    .search-box input {
+        width: 100px;
+    }
+
+    /* Hero Slider */
+    .hero-slider {
+        height: 300px;
+        margin: 20px auto;
+        border-radius: 12px;
+    }
+
+    .slide {
+        padding: 0 20px;
+    }
+
+    .slide-content h2 {
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+    }
+
+    .slide-content p {
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+
+    .slider-nav {
+        width: 40px;
+        height: 40px;
+    }
+
+    .slider-nav.prev {
+        right: 10px;
+    }
+
+    .slider-nav.next {
+        left: 10px;
+    }
+
+    [dir="rtl"] .slider-nav.prev {
+        right: 10px;
+        left: auto;
+    }
+
+    [dir="rtl"] .slider-nav.next {
+        left: 10px;
+        right: auto;
+    }
+
+    /* Sections & Grids */
+    section {
+        padding: 40px 0;
+    }
+
+    .section-title {
+        font-size: 1.4rem;
+        margin-bottom: 25px;
+    }
+
+    .categories-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .category-card {
+        padding: 20px 10px;
+    }
+
+    .category-card i {
+        font-size: 2rem;
+    }
+
+    .category-card h3 {
+        font-size: 0.9rem;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .product-img {
+        height: 180px;
+    }
+
+    .price {
+        font-size: 1.3rem;
+    }
+
+    /* Footer */
+    .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        text-align: center;
+    }
+
+    .social-icons {
+        justify-content: center;
+    }
+
+    /* Chat & Admin */
+    .chat-admin-layout,
+    .checkout-layout {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        min-height: 80vh !important;
+    }
+
+    .chat-list {
+        border-bottom: 1px solid #222;
+        max-height: 300px;
+    }
+
+    .active-chat-container {
+        height: 60vh !important;
+    }
+
+    /* Payment Method Cards */
+    .payment-methods {
+        grid-template-columns: 1fr;
+    }
+
+    #printable-receipt {
+        padding: 15px;
+    }
+
+    #printable-receipt::before {
+        font-size: 4rem;
+    }
+}
+
+/* Fix for very small screens */
+@media (max-width: 480px) {
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .search-box input {
+        display: none;
+        /* Hide input text completely, keep icon */
+    }
+
+    .search-box {
+        padding: 8px;
+        border-radius: 50%;
+    }
+
+    .search-box i {
+        margin: 0;
+    }
 }

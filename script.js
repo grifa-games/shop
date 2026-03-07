@@ -130,7 +130,11 @@ let currentState = {
     cart: JSON.parse(localStorage.getItem('grifa_cart')) || [],
     activeCategory: 'all',
     searchQuery: '',
-    currentSlide: 0
+    currentSlide: 0,
+    minPriceFilter: 0,
+    maxPriceFilter: 25000,
+    sidebarCategory: 'all',
+    showFilters: false
 };
 
 // --- Notifications ---
@@ -181,33 +185,62 @@ function renderBanners() {
 
 function renderCategories() {
     const container = document.getElementById('categories-list');
-    if (!container) return;
+    const sidebarSelect = document.getElementById('sidebar-category-select');
     const t = translations[currentState.lang];
 
-    container.innerHTML = currentState.categories.map(cat => `
-        <div class="category-card ${currentState.activeCategory === cat.name ? 'active' : ''}" onclick="setCategory('${cat.name}')">
-            <i class="${cat.icon}"></i>
-            <h3>${t.categories[cat.name]}</h3>
-        </div>
-    `).join('');
+    if (container) {
+        container.innerHTML = currentState.categories.map(cat => `
+            <div class="category-card ${currentState.activeCategory === cat.name ? 'active' : ''}" onclick="setCategory('${cat.name}')">
+                <i class="${cat.icon}"></i>
+                <h3>${t.categories[cat.name]}</h3>
+            </div>
+        `).join('');
+    }
+
+    if (sidebarSelect) {
+        let optionsHtml = `<option value="all" ${currentState.sidebarCategory === 'all' ? 'selected' : ''}>${currentState.lang === 'ar' ? 'كامل المنتجات' : 'All Products'}</option>`;
+        optionsHtml += currentState.categories.map(cat => `
+            <option value="${cat.name}" ${currentState.sidebarCategory === cat.name ? 'selected' : ''}>${t.categories[cat.name]}</option>
+        `).join('');
+        sidebarSelect.innerHTML = optionsHtml;
+    }
 }
 
 function renderProducts() {
     const container = document.getElementById('products-list');
     if (!container) return;
 
+    // Apply Filters
     const filtered = currentState.products.filter(p => {
-        const matchesCat = currentState.activeCategory === 'all' || p.cat === currentState.activeCategory;
+        // Category filters (either from main categories or sidebar)
+        const activeCat = currentState.showFilters ? currentState.sidebarCategory : currentState.activeCategory;
+        const matchesCat = activeCat === 'all' || p.cat === activeCat;
         const matchesSearch = p.name.toLowerCase().includes(currentState.searchQuery.toLowerCase());
-        return matchesCat && matchesSearch;
+        const matchesPrice = p.price >= currentState.minPriceFilter && p.price <= currentState.maxPriceFilter;
+
+        return matchesCat && matchesSearch && (!currentState.showFilters || matchesPrice);
     });
 
-    if (filtered.length === 0) {
-        container.innerHTML = `<p style="grid-column: 1/-1; text-align: center;">${translations[currentState.lang].notif_search_empty}</p>`;
+    // Control visibility of "All Games" button and slice the array if not in filters mode
+    let displayProducts = filtered;
+    const allGamesContainer = document.getElementById('all-games-btn-container');
+
+    if (!currentState.showFilters) {
+        // Show max 4 on the main page
+        if (filtered.length > 4) {
+            displayProducts = filtered.slice(0, 4);
+        }
+        if (allGamesContainer) allGamesContainer.style.display = 'block';
+    } else {
+        if (allGamesContainer) allGamesContainer.style.display = 'none';
+    }
+
+    if (displayProducts.length === 0) {
+        container.innerHTML = `<p style="grid-column: 1/-1; text-align: center;">${currentState.lang === 'ar' ? "لم يتم العثور على نتائج للبحث" : "No results found"}</p>`;
         return;
     }
 
-    container.innerHTML = filtered.map(p => `
+    container.innerHTML = displayProducts.map(p => `
         <div class="product-card">
             <div class="product-img" style="background-image: url('${p.img}')"></div>
             <div class="product-info">
@@ -248,6 +281,69 @@ function setCategory(cat) {
 function handleSearch(e) {
     currentState.searchQuery = e.target.value;
     renderProducts();
+}
+
+// --- Shop & Filter UI Logic ---
+function openAllGames() {
+    currentState.showFilters = true;
+    currentState.activeCategory = 'all';
+    currentState.sidebarCategory = 'all';
+
+    // UI toggles
+    const sidebar = document.getElementById('shop-filters');
+    if (sidebar) sidebar.style.display = 'block';
+
+    const filterBtn = document.getElementById('toggle-filter-btn');
+    if (filterBtn) filterBtn.style.display = 'block';
+
+    const sectionTitle = document.getElementById('products-section-title');
+    if (sectionTitle) sectionTitle.textContent = currentState.lang === 'ar' ? "كل الألعاب" : "All Games";
+
+    scrollToProducts();
+    renderCategories(); // update select box
+    renderProducts();
+}
+
+function updatePriceLabel(val) {
+    document.getElementById('price-val').textContent = val;
+}
+
+function applyFilters() {
+    // Read from DOM
+    const minPriceVal = parseInt(document.getElementById('min-price-input').value) || 0;
+    const maxPriceVal = parseInt(document.getElementById('max-price-input').value) || 250000;
+    const catVal = document.getElementById('sidebar-category-select').value;
+
+    currentState.minPriceFilter = minPriceVal;
+    currentState.maxPriceFilter = maxPriceVal;
+    currentState.sidebarCategory = catVal;
+    currentState.showFilters = true;
+
+    // Scroll mobile to products
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+        document.getElementById('shop-filters').style.display = 'none'; // hide after apply on mobile
+    }
+
+    renderProducts();
+}
+
+function toggleFiltersMobile() {
+    const sidebar = document.getElementById('shop-filters');
+    if (sidebar) {
+        sidebar.style.display = sidebar.style.display === 'none' ? 'block' : 'none';
+
+        // Add mobile fixed styles if showing
+        if (window.innerWidth <= 768 && sidebar.style.display === 'block') {
+            sidebar.style.position = 'absolute';
+            sidebar.style.top = '60px';
+            sidebar.style.left = '10px';
+            sidebar.style.right = '10px';
+            sidebar.style.width = 'auto';
+            sidebar.style.zIndex = '999';
+            sidebar.style.boxShadow = '0 10px 40px rgba(0,0,0,0.9)';
+        }
+    }
 }
 
 function addToCart(id) {
