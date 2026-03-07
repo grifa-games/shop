@@ -307,7 +307,7 @@ function renderAdminMessage(msg) {
 
     let content = '';
     if (msg.text) content += `<div>${msg.text}</div>`;
-    if (msg.image) content += `<img src="${msg.image}" style="max-width: 200px; border-radius: 8px; cursor: pointer;" onclick="window.open('${msg.image}')">`;
+    if (msg.image) content += `<img src="${msg.image}" style="max-width: 200px; border-radius: 8px; cursor: pointer;" onclick="showImagePreview('${msg.image}')">`;
 
     const time = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' }) : '';
     content += `<span class="time">${time}</span>`;
@@ -462,6 +462,18 @@ function initAdmin() {
     if (document.getElementById('messages-tab').classList.contains('active')) {
         initAdminChatList();
     }
+}
+
+
+// --- Image Preview Logic ---
+function showImagePreview(src) {
+    const modal = document.getElementById('image-viewer-modal');
+    document.getElementById('full-image-preview').src = src;
+    modal.classList.add('show');
+}
+
+function closeImageViewer() {
+    document.getElementById('image-viewer-modal').classList.remove('show');
 }
 
 document.addEventListener('DOMContentLoaded', initAdmin);

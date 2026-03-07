@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>إتمام الطلب - GRIFA Games</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .step {
@@ -14,6 +14,64 @@
 
         .step.active {
             display: block;
+        }
+
+        /* --- CACHE BUSTER STYLES FOR OVERLAY --- */
+        #image-viewer-modal {
+            display: none;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.9) !important;
+            z-index: 9999999 !important;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        #image-viewer-modal.show {
+            display: flex !important;
+        }
+
+        #image-viewer-modal .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90vh;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: default;
+        }
+
+        #image-viewer-modal img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        #image-viewer-modal .close-viewer {
+            position: absolute;
+            top: -50px;
+            right: 0;
+            font-size: 50px !important;
+            color: #fff !important;
+            cursor: pointer;
+            background: none !important;
+            border: none !important;
+            z-index: 99999999;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            width: 50px;
+            height: 50px;
+            line-height: 25px;
+            padding: 0;
         }
     </style>
 </head>
@@ -237,6 +295,14 @@
         </div>
     </div>
 
+    <!-- Image Preview Modal -->
+    <div id="image-viewer-modal" onclick="if(event.target === this) closeImageViewer()">
+        <div class="modal-content">
+            <button class="close-viewer" onclick="closeImageViewer()">&times;</button>
+            <img id="full-image-preview" src="">
+        </div>
+    </div>
+
     <!-- SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -341,7 +407,7 @@
 
             let content = '';
             if (msg.text) content += `<div>${msg.text}</div>`;
-            if (msg.image) content += `<img src="${msg.image}" onclick="window.open('${msg.image}')">`;
+            if (msg.image) content += `<img src="${msg.image}" style="cursor: pointer;" onclick="showImagePreview('${msg.image}')">`;
 
             const time = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' }) : '';
             content += `<span class="time">${time}</span>`;
@@ -639,6 +705,15 @@
             } else {
                 notifier.show("كود الخصم غير صالح أو منتهي الصلاحية", "error");
             }
+        }
+        function showImagePreview(src) {
+            const modal = document.getElementById('image-viewer-modal');
+            document.getElementById('full-image-preview').src = src;
+            modal.classList.add('show');
+        }
+
+        function closeImageViewer() {
+            document.getElementById('image-viewer-modal').classList.remove('show');
         }
     </script>
 </body>

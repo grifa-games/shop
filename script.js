@@ -382,17 +382,16 @@ function sendOrderEmail(order) {
 
     const templateParams = {
         order_id: order.id,
-        customer_name: order.name || order.email || "Customer",
         customer_email: order.email,
         total_amount: order.total + " دج",
         items: (order.items || []).map(i => `${i.name} (${i.delivery || 'جاري المعالجة'})`).join(', '),
         ccp_account: order.ccp_dest || "00799999002764092903",
         from_email: "oussamachorba8@gmail.com",
 
-        // Robust mapping for common/default EmailJS templates
-        from_name: order.name || order.email || "Store Order",
-        message: `تفاصيل الطلب: \n ${(order.items || []).map(i => `${i.name}: ${i.delivery}`).join('\n')}`,
-        order_details: (order.items || []).map(i => `${i.name}: ${i.delivery}`).join('\n')
+        // Exact matches for the user's EmailJS template
+        name: order.name || order.email || "Customer",
+        message: (order.items || []).map(i => `${i.name}: ${i.delivery}`).join('\n'),
+        time: new Date().toLocaleString('ar-DZ')
     };
 
     if (typeof notifier !== 'undefined') {

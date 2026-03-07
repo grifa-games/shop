@@ -5,9 +5,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRIFA ADMIN | لوحة التحكم</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="admin.css?v=5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- CACHE BUSTER STYLES FOR OVERLAY --- */
+        #image-viewer-modal {
+            display: none;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.9) !important;
+            z-index: 9999999 !important;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        #image-viewer-modal.show {
+            display: flex !important;
+        }
+
+        #image-viewer-modal .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90vh;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: default;
+        }
+
+        #image-viewer-modal img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        #image-viewer-modal .close-viewer {
+            position: absolute;
+            top: -50px;
+            right: 0;
+            font-size: 50px !important;
+            color: #fff !important;
+            cursor: pointer;
+            background: none !important;
+            border: none !important;
+            z-index: 99999999;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            width: 50px;
+            height: 50px;
+            line-height: 25px;
+            padding: 0;
+        }
+
+        /* --- Custom Scrollbar for Chat (Always Visible) --- */
+        #admin-chat-messages::-webkit-scrollbar {
+            width: 10px !important;
+            display: block !important;
+        }
+
+        #admin-chat-messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-radius: 5px;
+        }
+
+        #admin-chat-messages::-webkit-scrollbar-thumb {
+            background: #abff00 !important;
+            /* Make sure it matches GRYFA green */
+            border-radius: 5px !important;
+            border: 2px solid #000;
+        }
+    </style>
 </head>
 
 <body class="admin-body">
@@ -173,31 +251,32 @@
                 <h1>رسائل العملاء</h1>
             </header>
             <div class="chat-admin-layout"
-                style="display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: calc(100vh - 150px); background: #111; border-radius: 12px; overflow: hidden; border: 1px solid #222;">
+                style="display: grid; grid-template-columns: 300px 1fr; gap: 0; height: calc(100vh - 120px); background: #111; border-radius: 12px; overflow: hidden; border: 1px solid #222;">
                 <!-- Chat List -->
-                <div class="chat-list" style="border-left: 1px solid #222; overflow-y: auto;">
+                <div class="chat-list" style="border-left: 1px solid #222; overflow-y: auto; background: #0a0a0a;">
                     <div id="admin-chat-list">
                         <!-- Chat entries injected here -->
                         <p style="padding: 20px; color: #666; text-align: center;">لا يوجد محادثات نشطة</p>
                     </div>
                 </div>
                 <!-- Active Chat -->
-                <div class="active-chat-container" style="display: flex; flex-direction: column;">
+                <div class="active-chat-container"
+                    style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
                     <div id="active-chat-header"
-                        style="padding: 15px; background: #000; border-bottom: 1px solid #222; font-weight: bold; display: flex; justify-content: space-between; align-items: center; visibility: hidden;">
+                        style="padding: 15px; background: #000; border-bottom: 1px solid #222; font-weight: bold; display: flex; justify-content: space-between; align-items: center; visibility: hidden; flex-shrink: 0;">
                         <span id="chat-user-name">اسم المستخدم</span>
                         <button class="btn-primary" style="width: auto; padding: 5px 15px; font-size: 0.8rem;"
                             onclick="openGrantOrderModal()">إعطاء طلبية</button>
                     </div>
                     <div id="admin-chat-messages"
-                        style="flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                        style="flex: 1; overflow-y: scroll; padding: 20px; display: flex; flex-direction: column; gap: 12px; background: #0a0a0a;">
                         <p style="margin: auto; color: #444;">اختر محادثة لبدء الدردشة</p>
                     </div>
                     <div id="admin-chat-input-area"
-                        style="padding: 15px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; visibility: hidden;">
+                        style="padding: 15px; background: #000; border-top: 1px solid #222; display: flex; gap: 15px; flex-shrink: 0; visibility: hidden;">
                         <input type="text" id="admin-chat-input" placeholder="اكتب رداً..."
-                            style="flex: 1; background: #111; border: 1px solid #333; padding: 10px; border-radius: 8px; color: #fff;">
-                        <button class="btn-primary" style="width: 40px; height: 40px;" onclick="sendAdminMessage()">
+                            style="flex: 1; background: #111; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff;">
+                        <button class="btn-primary" style="width: 45px; height: 45px;" onclick="sendAdminMessage()">
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </div>
@@ -317,6 +396,14 @@
             });
         }
     </script>
+
+    <!-- Image Preview Modal -->
+    <div id="image-viewer-modal" onclick="if(event.target === this) closeImageViewer()">
+        <div class="modal-content">
+            <button class="close-viewer" onclick="closeImageViewer()">&times;</button>
+            <img id="full-image-preview" src="">
+        </div>
+    </div>
 
     <!-- SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>

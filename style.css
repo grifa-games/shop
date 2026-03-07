@@ -795,3 +795,103 @@ footer {
     text-align: left;
     color: rgba(255, 255, 255, 0.6);
 }
+
+/* --- IMAGE VIEWER MODAL FIXED OVERLAY --- */
+#image-viewer-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    z-index: 999999 !important;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+}
+
+#image-viewer-modal.show {
+    display: flex !important;
+}
+
+#image-viewer-modal .modal-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    background: none;
+    border: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#image-viewer-modal img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+    display: block;
+    cursor: default;
+}
+
+#image-viewer-modal .close-viewer {
+    position: absolute;
+    top: -50px;
+    right: 0;
+    font-size: 40px;
+    color: white;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-weight: bold;
+    z-index: 1000000;
+}
+
+/* --- ADMIN CHAT SCROLLING FIX --- */
+.chat-admin-layout {
+    height: calc(100vh - 120px) !important;
+}
+
+.active-chat-container {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+#admin-chat-messages {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 20px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    background: #0a0a0a;
+}
+
+#admin-chat-messages::-webkit-scrollbar {
+    width: 8px !important;
+    display: block !important;
+}
+
+#admin-chat-messages::-webkit-scrollbar-track {
+    background: #111 !important;
+}
+
+#admin-chat-messages::-webkit-scrollbar-thumb {
+    background: var(--accent) !important;
+    border-radius: 4px !important;
+}
+
+#admin-chat-input-area {
+    padding: 15px 20px !important;
+    background: #000 !important;
+    border-top: 1px solid #222 !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    gap: 12px !important;
+    visibility: visible !important;
+}
