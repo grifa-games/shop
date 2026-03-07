@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إتمام الطلب - GRIFA Games</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Notifications -->
+    <div id="notifications-container"></div>
+
+    <header>
+        <div class="container nav-wrapper">
+            <div class="logo">
+                <h1 class="brand-font" onclick="location.href='index.html'" style="cursor:pointer">GRIFA
+                    <span>GAMES</span>
+                </h1>
+            </div>
+        </div>
+    </header>
+
+    <main class="container" style="padding: 40px 20px; display: grid; grid-template-columns: 1fr 1.5fr; gap: 40px;">
+        <!-- Left: Summary -->
+        <div class="checkout-summary"
+            style="background:var(--bg-card); padding:30px; border-radius:var(--radius); border:1px solid var(--border-color); height:fit-content">
+            <h2 class="brand-font">ملخص المنتجات</h2>
+            <div id="checkout-items" style="margin-top:20px;"></div>
+            <hr style="margin:20px 0; border:0; border-top:1px solid var(--border-color)">
+
+            <div class="coupon-section">
+                <div class="input-group" style="display:flex; gap:10px;">
+                    <input type="text" id="coupon-code" placeholder="كود الخصم">
+                    <button class="btn-primary" style="width:auto" onclick="applyCoupon()">تطبيق</button>
+                </div>
+            </div>
+
+            <div
+                style="display:flex; justify-content:space-between; margin-top:20px; font-size:1.2rem; font-weight:800;">
+                <span>الإجمالي:</span>
+                <span id="final-total" style="color:var(--accent)">0 دج</span>
+            </div>
+        </div>
+
+        <!-- Right: Stepper Form -->
+        <div class="checkout-form-container">
+            <!-- Step 1: User Info -->
+            <div id="step-1" class="step active">
+                <h2 class="brand-font">بيانات الاستلام</h2>
+                <form onsubmit="nextStep(2); return false;" style="margin-top:30px">
+                    <div class="input-group">
+                        <label>الاسم الكامل</label>
+                        <input type="text" id="order-fullname" placeholder="أدخل اسمك الكامل" required>
+                    </div>
+                    <div class="input-group">
+                        <label>رقم الهاتف</label>
+                        <input type="tel" id="order-phone" placeholder="05/06/07XXXXXXXX" required>
+                    </div>
+                    <div class="input-group">
+                        <label>البريد الإلكتروني (الذي سيصلك الكود عليه)</label>
+                        <input type="email" id="order-email" readonly disabled>
+                        <small style="color:var(--text-secondary)">يتم استخدامه من حسابك الحالي</small>
+                    </div>
+                    <button type="submit" class="btn-primary" style="padding:20px;">الذهاب للدفع</button>
+                </form>
+            </div>
+
+            <!-- Step 2: Payment Selector -->
+            <div id="step-2" class="step">
+                <h2 class="brand-font">طريقة الدفع</h2>
+                <p style="color:var(--text-secondary); margin-top:10px">اختر وسيلة الدفع المناسبة للتحويل إلى CCP</p>
+
+                <div class="payment-methods">
+                    <div class="method-card" style="opacity: 0.6; cursor: not-allowed; position: relative;">
+                        <i class="fa-solid fa-credit-card"></i>
+                        الذهبية / Edahabia
+                        <span
+                            style="position: absolute; top: 10px; left: 10px; background: var(--accent); color: #000; font-size: 0.6rem; padding: 2px 5px; border-radius: 4px; font-weight: bold;">قيد
+                            التطوير</span>
+                    </div>
+                    <div class="method-card" style="opacity: 0.6; cursor: not-allowed; position: relative;">
+                        <i class="fa-solid fa-building-columns"></i>
+                        CIB / بطاقة بنكية
+                        <span
+                            style="position: absolute; top: 10px; left: 10px; background: var(--accent); color: #000; font-size: 0.6rem; padding: 2px 5px; border-radius: 4px; font-weight: bold;">قيد
+                            التطوير</span>
+                    </div>
+                    <div class="method-card active" onclick="selectPayment('chat')">
+                        <i class="fa-solid fa-comments"></i>
+                        الدردشة مع المشرف
+                    </div>
+                </div>
+
+                <div class="ccp-info">
+                    <p>سيتم التحويل إلى CCP رقم:</p>
+                    <div class="ccp-number">00799999002764092903</div>
+                </div>
+
+                <div id="payment-chat-section" style="margin-top: 30px;">
+                    <div class="chat-container"
+                        style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; height: 400px;">
+                        <div class="chat-header"
+                            style="background: rgba(255,255,255,0.05); padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 10px; height: 10px; background: #9cf032; border-radius: 50%;"></div>
+                            <span style="font-weight: bold;">المشرف (أونلاين)</span>
+                        </div>
+                        <div id="chat-messages"
+                            style="flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Messages will appear here -->
+                            <div class="msg admin"
+                                style="background: rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 12px 12px 0 12px; align-self: flex-start; max-width: 80%; font-size: 0.9rem;">
+                                مرحباً بك! يرجى إرسال صورة وصل الدفع (بريدي موب أو CCP) هنا وسأقوم بتفعيل طلبك فوراً.
+                            </div>
+                        </div>
+                        <div class="chat-input-area"
+                            style="padding: 15px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border-color); display: flex; gap: 10px; align-items: center;">
+                            <label for="chat-image" style="cursor: pointer; color: var(--accent); font-size: 1.2rem;">
+                                <i class="fa-solid fa-camera"></i>
+                                <input type="file" id="chat-image" accept="image/*" style="display: none;"
+                                    onchange="uploadChatImage()">
+                            </label>
+                            <input type="text" id="chat-input" placeholder="اكتب رسالتك هنا..."
+                                style="flex: 1; background: #000; border: 1px solid #333; padding: 10px; border-radius: 8px; color: #fff;">
+                            <button onclick="sendChatMessage()"
+                                style="background: var(--accent); color: #000; border: none; width: 40px; height: 40px; border-radius: 8px; cursor: pointer;">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="payment-card-section" style="display: none;">
+                    <div class="card-visual">
+                        <div class="input-group">
+                            <label>رقم البطاقة (البطاقة الذهبية تبدأ بـ 6074)</label>
+                            <input type="text" id="card-number" placeholder="XXXX XXXX XXXX XXXX" maxlength="19"
+                                required>
+                        </div>
+                        <div class="input-group">
+                            <label>اسم صاحب البطاقة</label>
+                            <input type="text" id="card-name" placeholder="الاسم كما هو مكتوب في البطاقة" required>
+                        </div>
+                        <div style="display:flex; gap:10px">
+                            <div class="input-group" style="flex:2">
+                                <label>تاريخ الانتهاء</label>
+                                <input type="text" id="card-expiry" placeholder="MM/YY" maxlength="5" required>
+                            </div>
+                            <div class="input-group" style="flex:1">
+                                <label>CVV</label>
+                                <input type="password" id="card-cvv" placeholder="XXX" maxlength="3" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px" id="checkout-actions">
+                    <button class="btn-primary" style="background:#333; color:#fff" onclick="nextStep(1)">رجوع</button>
+                    <button class="btn-primary" id="confirm-payment-btn" onclick="step2To3()">تأكيد الدفع وإرسال
+                        طلبك</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Processing Overlay Modal -->
+    <div id="processing-modal" class="modal">
+        <div class="modal-content" style="max-width: 450px; text-align: center; padding: 50px 30px;">
+            <div class="loader"
+                style="width: 60px; height: 60px; border: 5px solid #222; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 30px;">
+            </div>
+            <h2 id="processing-title" class="brand-font" style="color: #fff; margin-bottom: 20px;">جاري معالجة الطلب...
+            </h2>
+            <div id="processing-steps"
+                style="text-align: right; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px;">
+                <p id="step-valid" style="margin-bottom: 12px; color: #888;"><i
+                        class="fa-solid fa-circle-notch fa-spin step-icon"></i> التحقق من بيانات البطاقة...</p>
+                <p id="step-balance" style="margin-bottom: 12px; color: #888;"><i
+                        class="fa-solid fa-circle step-icon"></i> فحص رصيد الحساب (CCP)...</p>
+                <p id="step-transfer" style="margin: 0; color: #888;"><i class="fa-solid fa-circle step-icon"></i> تحويل
+                    الأموال إلى الحساب المستلم...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTP Verification Modal -->
+    <div id="otp-modal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <h2 class="brand-font" style="color: var(--accent); margin-bottom: 15px;">تأكيد العملية</h2>
+            <p style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-secondary);">لقد أرسلنا رمز المتابعة إلى
+                رقم هاتفك المرتبط بالبطاقة</p>
+            <div class="input-group">
+                <label>رمز التأكيد (OTP)</label>
+                <input type="text" id="otp-input" placeholder="000000" maxlength="6"
+                    style="text-align: center; font-size: 1.5rem; letter-spacing: 5px; font-family: 'Orbitron';">
+            </div>
+            <button class="btn-primary w-full" onclick="verifyOTP()">تأكيد الدفع</button>
+            <p id="otp-error" style="color: var(--error); margin-top: 10px; display: none;">الرمز غير صحيح!</p>
+        </div>
+    </div>
+
+    <!-- Success Modal / Official Receipt -->
+    <div id="success-modal" class="modal">
+        <div class="modal-content receipt-content" id="printable-receipt">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <h1 class="brand-font" style="font-size: 2rem;">GRIFA <span style="color: var(--accent);">GAMES</span>
+                </h1>
+                <p>وصل دفع رسمي - Official Receipt</p>
+                <div style="height: 2px; background: var(--accent); width: 100px; margin: 15px auto;"></div>
+            </div>
+
+            <div id="receipt-details">
+                <!-- Data will be injected here -->
+            </div>
+
+            <div class="receipt-footer"
+                style="margin-top: 30px; border-top: 1px dashed #444; padding-top: 20px; text-align: center; font-size: 0.8rem; color: #888;">
+                <p>شكراً لشرائك من متجر جريفة! تم إرسال نسخة من هذا الوصل إلى بريدك الإلكتروني.</p>
+                <p>تواصل مع الدعم الفني في حال وجود أي مشكلة.</p>
+                <div style="margin-top: 20px;" class="no-print">
+                    <button class="btn-primary" onclick="window.print()"><i class="fa-solid fa-print"></i> طباعة
+                        الوصل</button>
+                    <button class="btn-secondary" onclick="window.location.href='index.html'">العودة للمتجر</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('grifa_user'));
+            if (!user) {
+                location.href = 'login.html';
+                return;
+            }
+            document.getElementById('order-email').value = user.email;
+
+            const cart = currentState.cart;
+            const container = document.getElementById('checkout-items');
+            if (!cart || cart.length === 0) {
+                container.innerHTML = "<p>السلة فارغة</p>";
+                return;
+            }
+
+            let total = 0;
+            container.innerHTML = cart.map(item => {
+                total += item.price;
+                return `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-weight:600">
+                        <span>${item.name}</span>
+                        <span style="color:var(--accent)">${item.price} دج</span>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('final-total').textContent = total + ' دج';
+
+            // Initialize Chat
+            initChatSystem(user);
+
+            // Add Paste Listener for Images
+            document.getElementById('chat-input').addEventListener('paste', (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let index in items) {
+                    const item = items[index];
+                    if (item.kind === 'file' && item.type.includes('image')) {
+                        const blob = item.getAsFile();
+                        processAndUploadPaste(blob);
+                    }
+                }
+            });
+        });
+
+        async function processAndUploadPaste(file) {
+            notifier.show("جاري معالجة الصورة الملصقة...", "info");
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64 = e.target.result;
+                const user = JSON.parse(localStorage.getItem('grifa_user'));
+                try {
+                    await db.collection('chats').doc(user.uid).collection('messages').add({
+                        image: base64,
+                        sender: 'user',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    await db.collection('chats').doc(user.uid).set({
+                        lastMessage: "📷 صورة ملصقة",
+                        lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        unread: true,
+                        userName: document.getElementById('order-fullname').value || user.email,
+                        userEmail: user.email
+                    }, { merge: true });
+                    notifier.show("تم إرسال الصورة بنجاح", "success");
+                } catch (err) {
+                    notifier.show("خطأ في إرسال الصورة", "error");
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        let chatUnsubscribe = null;
+        function initChatSystem(user) {
+            const chatMessages = document.getElementById('chat-messages');
+
+            // Listen for messages in user's specific chat doc
+            chatUnsubscribe = db.collection('chats').doc(user.uid).collection('messages')
+                .orderBy('timestamp', 'asc')
+                .onSnapshot(snapshot => {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added') {
+                            const msg = change.doc.data();
+                            renderMessage(msg);
+                        }
+                    });
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                });
+        }
+
+        function renderMessage(msg) {
+            const chatMessages = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `msg ${msg.sender === 'admin' ? 'admin' : 'user'}`;
+
+            let content = '';
+            if (msg.text) content += `<div>${msg.text}</div>`;
+            if (msg.image) content += `<img src="${msg.image}" onclick="window.open('${msg.image}')">`;
+
+            const time = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' }) : '';
+            content += `<span class="time">${time}</span>`;
+
+            div.innerHTML = content;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const user = JSON.parse(localStorage.getItem('grifa_user'));
+            if (!user) {
+                notifier.show("يرجى تسجيل الدخول أولاً", "error");
+                return;
+            }
+
+            if (typeof db === 'undefined' || !db) {
+                notifier.show("خطأ: تعذر الاتصال بقاعدة البيانات. تأكد من إعداد Firebase بشكل صحيح.", "error");
+                return;
+            }
+
+            try {
+                await db.collection('chats').doc(user.uid).collection('messages').add({
+                    text: text,
+                    sender: 'user',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await db.collection('chats').doc(user.uid).set({
+                    lastMessage: text,
+                    lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    userName: document.getElementById('order-fullname').value || user.email,
+                    userEmail: user.email,
+                    unread: true
+                }, { merge: true });
+
+                input.value = '';
+            } catch (e) {
+                console.error("Chat Error:", e);
+                notifier.show("فشل إرسال الرسالة. تأكد من تفعيل Firestore Rules.", "error");
+            }
+        }
+
+        async function uploadChatImage() {
+            const fileInput = document.getElementById('chat-image');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            if (typeof db === 'undefined' || !db) {
+                notifier.show("خطأ: تعذر الاتصال بقاعدة البيانات.", "error");
+                return;
+            }
+
+            notifier.show("جاري معالجة الصورة...", "info");
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64 = e.target.result;
+                const user = JSON.parse(localStorage.getItem('grifa_user'));
+
+                try {
+                    await db.collection('chats').doc(user.uid).collection('messages').add({
+                        image: base64,
+                        sender: 'user',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    await db.collection('chats').doc(user.uid).set({
+                        lastMessage: "📷 صورة",
+                        lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        unread: true,
+                        userName: document.getElementById('order-fullname').value || user.email,
+                        userEmail: user.email
+                    }, { merge: true });
+
+                    notifier.show("تم رفع الصورة بنجاح", "success");
+                    fileInput.value = '';
+                } catch (err) {
+                    console.error("Upload Error:", err);
+                    notifier.show("خطأ في رفع الصورة. قد يكون حجمها كبيراً جداً.", "error");
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function nextStep(s) {
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            document.getElementById('step-' + s).classList.add('active');
+        }
+
+        function validateCard() {
+            const num = document.getElementById('card-number').value.replace(/\s/g, '');
+            const name = document.getElementById('card-name').value;
+            const expiry = document.getElementById('card-expiry').value;
+            const cvv = document.getElementById('card-cvv').value;
+
+            // Strict Edahabia Check (Prefix 6074 or 6280)
+            if (!num.startsWith('6074') && !num.startsWith('6280')) {
+                notifier.show("خطأ: يرجى إدخال رقم بطاقة ذهبية صالح (يبدأ بـ 6074 أو 6280)", "error");
+                return false;
+            }
+
+            if (!name || num.length < 16 || !expiry || cvv.length < 3) {
+                notifier.show("يرجى التأكد من بيانات البطاقة بشكل كامل وصحيح", "error");
+                return false;
+            }
+            return true;
+        }
+
+        async function step2To3() {
+            if (!validateCard()) return;
+            document.getElementById('otp-modal').classList.add('show');
+        }
+
+        function verifyOTP() {
+            const otp = document.getElementById('otp-input').value;
+            if (otp.length === 6) {
+                document.getElementById('otp-modal').classList.remove('show');
+                startSmartProcessing();
+            } else {
+                const err = document.getElementById('otp-error');
+                err.style.display = 'block';
+                setTimeout(() => err.style.display = 'none', 2000);
+            }
+        }
+
+        function startSmartProcessing() {
+            const modal = document.getElementById('processing-modal');
+            modal.classList.add('show');
+
+            const sValid = document.getElementById('step-valid');
+            const sBalance = document.getElementById('step-balance');
+            const sTransfer = document.getElementById('step-transfer');
+
+            // Step 1: Validating
+            setTimeout(() => {
+                sValid.style.color = "var(--success)";
+                sValid.querySelector('i').className = "fa-solid fa-circle-check";
+
+                // Step 2: Balance Check
+                sBalance.style.color = "#fff";
+                sBalance.querySelector('i').className = "fa-solid fa-circle-notch fa-spin";
+
+                setTimeout(() => {
+                    sBalance.style.color = "var(--success)";
+                    sBalance.querySelector('i').className = "fa-solid fa-circle-check";
+
+                    // Step 3: Transfer
+                    sTransfer.style.color = "#fff";
+                    sTransfer.querySelector('i').className = "fa-solid fa-circle-notch fa-spin";
+
+                    setTimeout(() => {
+                        sTransfer.style.color = "var(--success)";
+                        sTransfer.querySelector('i').className = "fa-solid fa-circle-check";
+
+                        setTimeout(() => {
+                            modal.classList.remove('show');
+                            submitRealOrder();
+                        }, 1000);
+                    }, 2500);
+                }, 2000);
+            }, 1500);
+        }
+
+        async function submitRealOrder() {
+            const user = JSON.parse(localStorage.getItem('grifa_user'));
+            const cart = currentState.cart;
+            const subtotal = cart.reduce((s, i) => s + i.price, 0);
+            const discount = window.appliedCoupon ? (subtotal * window.appliedCoupon.discount / 100) : 0;
+            const finalTotal = subtotal - discount;
+
+            const orderData = {
+                id: 'GF-' + Math.floor(Math.random() * 9000 + 1000),
+                userId: user.uid,
+                email: user.email,
+                name: document.getElementById('order-fullname').value,
+                phone: document.getElementById('order-phone').value,
+                items: cart,
+                total: finalTotal,
+                discount: discount,
+                status: 'completed',
+                date: new Date().toLocaleString('ar-DZ'),
+                payment: 'Edahabia Pay',
+                ccp_dest: '00799999002764092903'
+            };
+
+            const orders = JSON.parse(localStorage.getItem('grifa_orders')) || [];
+            orders.push(orderData);
+            localStorage.setItem('grifa_orders', JSON.stringify(orders));
+
+            try {
+                if (typeof db !== 'undefined') {
+                    await db.collection('orders').doc(orderData.id).set(orderData);
+                }
+            } catch (e) { }
+
+            document.getElementById('receipt-details').innerHTML = `
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; border: 1px solid #333;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <span>رقم المعاملة:</span>
+                        <strong style="color: var(--accent);">${orderData.id}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <span>تاريخ العملية:</span>
+                        <span>${orderData.date}</span>
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+                    
+                    <div style="margin-bottom: 15px;">
+                        <p style="margin-bottom: 10px; font-weight: bold; color: #888;">تفاصيل الدفع (CCP):</p>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                            <span>خصم من حساب (البطاقة الذهبية):</span>
+                            <span style="color: #ff4b4b;">-${orderData.total} دج</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 5px;">
+                            <span>إلى حساب المتجر (CCP):</span>
+                            <span style="color: var(--success); text-align: left;">+${orderData.total} دج<br><small style="color: #666;">Account: ${orderData.ccp_dest}</small></span>
+                        </div>
+                    </div>
+
+                    <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+                    <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; color: var(--accent);">
+                        <span>المبلغ النهائي:</span>
+                        <span>${orderData.total} دج</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 25px; padding: 20px; background: rgba(156, 240, 50, 0.1); border-radius: 10px; border: 1px dashed var(--accent);">
+                    <h4 style="color: var(--accent); margin-bottom: 10px;"><i class="fa-solid fa-key"></i> أكواد التسجيل (تم الإرسال للإيميل):</h4>
+                    ${cart.map(item => `
+                        <div style="margin-bottom: 10px;">
+                            <p style="font-size: 0.9rem;"><strong>${item.name}:</strong></p>
+                            <code style="display: block; background: #000; padding: 12px; border-radius: 5px; color: var(--accent); font-family: 'Orbitron';">${item.delivery || "ADMIN_PENDING_CODE"}</code>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            notifier.show("تمت عملية سحب الأموال بنجاح!", "success");
+
+            setTimeout(() => {
+                document.getElementById('success-modal').classList.add('show');
+                localStorage.removeItem('grifa_cart');
+                if (typeof updateCartBadge === 'function') updateCartBadge();
+            }, 1000);
+        }
+
+        function selectPayment(p) {
+            document.querySelectorAll('.method-card').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            const chatSection = document.getElementById('payment-chat-section');
+            const cardSection = document.getElementById('payment-card-section');
+            const ccpInfo = document.querySelector('.ccp-info');
+            const confirmBtn = document.getElementById('confirm-payment-btn');
+
+            if (p === 'chat') {
+                chatSection.style.display = 'block';
+                cardSection.style.display = 'none';
+                ccpInfo.style.display = 'none';
+                confirmBtn.style.display = 'none'; // Hide confirmation button in chat mode
+            } else if (p === 'edahabia' || p === 'card') {
+                chatSection.style.display = 'none';
+                cardSection.style.display = 'block';
+                ccpInfo.style.display = 'block';
+                confirmBtn.style.display = 'block';
+            }
+        }
+
+        function applyCoupon() {
+            const code = document.getElementById('coupon-code').value.trim().toUpperCase();
+            if (!code) return;
+
+            const coupons = JSON.parse(localStorage.getItem('grifa_coupons')) || [];
+            const coupon = coupons.find(c => c.code === code);
+
+            if (coupon) {
+                const cart = currentState.cart;
+                const subtotal = cart.reduce((s, i) => s + i.price, 0);
+                const discountAmount = (subtotal * coupon.discount) / 100;
+                const newTotal = subtotal - discountAmount;
+
+                document.getElementById('final-total').innerHTML = `
+                    <span style="text-decoration: line-through; color: var(--text-secondary); font-size: 0.9rem; margin-left: 10px;">${subtotal} دج</span>
+                    <span>${newTotal} دج</span>
+                `;
+                notifier.show(`تم تطبيق الكوبون بنجاح! خصم ${coupon.discount}%`, "success");
+
+                // Store applied coupon in session for order submission
+                window.appliedCoupon = coupon;
+            } else {
+                notifier.show("كود الخصم غير صالح أو منتهي الصلاحية", "error");
+            }
+        }
+    </script>
+</body>
+
+</html>
