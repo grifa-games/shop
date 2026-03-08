@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>حسابي - GRIFA Games</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="style.css?v=6">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -135,6 +136,7 @@
             <button onclick="switchProfileTab('orders')"><i class="fa-solid fa-box"></i> طلباتي</button>
             <button onclick="switchProfileTab('coins')"><i class="fa-solid fa-coins"></i> عملاتي والمكافآت</button>
             <button onclick="switchProfileTab('wishlist')"><i class="fa-solid fa-heart"></i> قائمة الرغبات</button>
+            <button onclick="switchProfileTab('messages')"><i class="fa-solid fa-comments"></i> رسائلي</button>
             <button onclick="switchProfileTab('settings')"><i class="fa-solid fa-gear"></i> إعدادات الحساب</button>
             <button onclick="location.href='index.html'"><i class="fa-solid fa-arrow-right-from-bracket"></i> العودة
                 للمتجر</button>
@@ -211,6 +213,38 @@
                 </div>
             </div>
 
+            <!-- Messages Tab -->
+            <div id="tab-messages" class="profile-tab">
+                <h2 class="brand-font" style="margin-bottom: 25px;">رسائلي مع المشرف</h2>
+                <div class="chat-container"
+                    style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; height: 500px;">
+                    <div class="chat-header"
+                        style="background: rgba(255,255,255,0.05); padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 10px; height: 10px; background: #9cf032; border-radius: 50%;"></div>
+                        <span style="font-weight: bold;">المشرف (أونلاين)</span>
+                    </div>
+                    <div id="profile-chat-messages"
+                        style="flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Messages will appear here -->
+                    </div>
+                    <div class="chat-input-area"
+                        style="padding: 15px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border-color); display: flex; gap: 10px; align-items: center;">
+                        <label for="profile-chat-image"
+                            style="cursor: pointer; color: var(--accent); font-size: 1.2rem;">
+                            <i class="fa-solid fa-camera"></i>
+                            <input type="file" id="profile-chat-image" accept="image/*" style="display: none;"
+                                onchange="uploadProfileChatImage()">
+                        </label>
+                        <input type="text" id="profile-chat-input" placeholder="اكتب رسالتك هنا..."
+                            style="flex: 1; background: #000; border: 1px solid #333; padding: 10px; border-radius: 8px; color: #fff;">
+                        <button onclick="sendProfileChatMessage()"
+                            style="background: var(--accent); color: #000; border: none; width: 40px; height: 40px; border-radius: 8px; cursor: pointer;">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Settings Tab -->
             <div id="tab-settings" class="profile-tab">
                 <h2 class="brand-font" style="margin-bottom: 25px;">إعدادات الحساب</h2>
@@ -221,6 +255,12 @@
                             <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">اسم
                                 المستخدم (Username)</label>
                             <input type="text" id="settings-username" required
+                                style="width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px;">
+                        </div>
+                        <div class="input-group" style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">رقم الهاتف
+                                (لطلب الألعاب)</label>
+                            <input type="tel" id="settings-phone" placeholder="05/06/07XXXXXXXX"
                                 style="width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px;">
                         </div>
                         <div class="input-group" style="margin-bottom: 25px;">
@@ -253,6 +293,7 @@
 
             // Populate Settings Form
             document.getElementById('settings-username').value = displayName;
+            document.getElementById('settings-phone').value = user.phone || '';
             document.getElementById('settings-email').value = user.email;
 
             // Handle Settings Save
@@ -270,8 +311,16 @@
 
                         // Update local user object
                         const grifaUser = JSON.parse(localStorage.getItem('grifa_user'));
+                        const newPhone = document.getElementById('settings-phone').value.trim();
                         grifaUser.displayName = newName;
+                        grifaUser.phone = newPhone;
                         localStorage.setItem('grifa_user', JSON.stringify(grifaUser));
+
+                        // Try saving phone to firestore profile as well
+                        try {
+                            const db = firebase.firestore();
+                            await db.collection('users').doc(currentUser.uid).set({ phone: newPhone, displayName: newName }, { merge: true });
+                        } catch (dbErr) { console.log('DB rule issue, skipping firestore phone save', dbErr); }
 
                         document.getElementById('prof-name').textContent = newName;
                         // update notifier from script.js logic if possible, otherwise simple alert
@@ -295,6 +344,9 @@
 
             // Load Orders from LocalStorage (or Firebase if adapted)
             const orders = JSON.parse(localStorage.getItem('grifa_orders')) || [];
+
+            // Profile Chat Initialization
+            initProfileChat(user);
             const userOrders = orders.filter(o => o.email === user.email || o.userId === user.uid);
 
             document.getElementById('dash-orders-count').textContent = userOrders.length;
@@ -325,6 +377,183 @@
                 switchProfileTab(target);
             }
         });
+
+        // Profile Chat Logic
+        let profileChatUnsubscribe = null;
+        let profileChatDocUnsubscribe = null;
+
+        function initProfileChat(user) {
+            const db = firebase.firestore();
+            const messagesDiv = document.getElementById('profile-chat-messages');
+
+            // Listen for Messages
+            profileChatUnsubscribe = db.collection('chats').doc(user.uid).collection('messages')
+                .orderBy('timestamp', 'asc')
+                .onSnapshot(snapshot => {
+                    let content = '';
+                    snapshot.forEach(doc => {
+                        const msg = doc.data();
+                        const isUser = msg.sender === 'user';
+                        const alignSelf = isUser ? 'flex-end' : 'flex-start';
+                        const bg = isUser ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
+                        const color = isUser ? '#000' : '#fff';
+                        const radius = isUser ? '12px 12px 0 12px' : '12px 12px 12px 0';
+
+                        content += `
+                            <div class="msg" style="background: ${bg}; color: ${color}; padding: 10px 15px; border-radius: ${radius}; align-self: ${alignSelf}; max-width: 80%; font-size: 0.9rem;">
+                                ${msg.text ? msg.text : ''}
+                                ${msg.image ? `<img src="${msg.image}" style="max-width: 200px; border-radius: 8px; cursor: pointer;" onclick="showImagePreview('${msg.image}')">` : ''}
+                            </div>
+                        `;
+                    });
+                    if (!content) {
+                        content = `<div class="msg admin" style="background: rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 12px 12px 0 12px; align-self: flex-start; max-width: 80%; font-size: 0.9rem;">مرحباً بك! تواصل معنا إذا واجهت أي مشكلة.</div>`;
+                    }
+                    messagesDiv.innerHTML = content;
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                });
+
+            // Listen for Chat Lock state
+            profileChatDocUnsubscribe = db.collection('chats').doc(user.uid).onSnapshot(doc => {
+                const inputArea = document.querySelector('#tab-messages .chat-input-area');
+                if (doc.exists && doc.data().closed) {
+                    inputArea.innerHTML = '<p style="color: var(--error); text-align: center; width: 100%; margin: 0;">🔒 المحادثة مقفلة من قبل المشرف</p>';
+                } else if (inputArea.querySelector('p')) {
+                    inputArea.innerHTML = `
+                        <label for="profile-chat-image" style="cursor: pointer; color: var(--accent); font-size: 1.2rem;">
+                            <i class="fa-solid fa-camera"></i>
+                            <input type="file" id="profile-chat-image" accept="image/*" style="display: none;" onchange="uploadProfileChatImage()">
+                        </label>
+                        <input type="text" id="profile-chat-input" placeholder="اكتب رسالتك هنا..." style="flex: 1; background: #000; border: 1px solid #333; padding: 10px; border-radius: 8px; color: #fff;">
+                        <button onclick="sendProfileChatMessage()" style="background: var(--accent); color: #000; border: none; width: 40px; height: 40px; border-radius: 8px; cursor: pointer;">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    `;
+                }
+            });
+
+            attachPasteListener();
+        }
+
+        function attachPasteListener() {
+            setTimeout(() => {
+                const input = document.getElementById('profile-chat-input');
+                if (input) {
+                    input.addEventListener('paste', (e) => {
+                        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                        for (let index in items) {
+                            const item = items[index];
+                            if (item.kind === 'file' && item.type.includes('image')) {
+                                const blob = item.getAsFile();
+                                processProfileImagePaste(blob);
+                            }
+                        }
+                    });
+
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') sendProfileChatMessage();
+                    });
+                }
+            }, 500);
+        }
+
+        async function processProfileImagePaste(file) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64 = e.target.result;
+                const user = JSON.parse(localStorage.getItem('grifa_user'));
+                try {
+                    const db = firebase.firestore();
+                    await db.collection('chats').doc(user.uid).collection('messages').add({
+                        image: base64,
+                        sender: 'user',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    await db.collection('chats').doc(user.uid).set({
+                        lastMessage: "📷 صورة",
+                        lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        unread: true,
+                        userName: user.displayName || user.email,
+                        userEmail: user.email,
+                        userPhone: user.phone || ''
+                    }, { merge: true });
+                } catch (err) { console.error("Paste upload error", err); }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function sendProfileChatMessage() {
+            const input = document.getElementById('profile-chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            const user = JSON.parse(localStorage.getItem('grifa_user'));
+
+            try {
+                const db = firebase.firestore();
+                await db.collection('chats').doc(user.uid).collection('messages').add({
+                    text: text,
+                    sender: 'user',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await db.collection('chats').doc(user.uid).set({
+                    lastMessage: text,
+                    lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    unread: true,
+                    userName: user.displayName || user.email,
+                    userEmail: user.email,
+                    userPhone: user.phone || ''
+                }, { merge: true });
+
+                input.value = '';
+            } catch (e) { console.error("Chat error", e); }
+        }
+
+        async function uploadProfileChatImage() {
+            const input = document.getElementById('profile-chat-image');
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64 = e.target.result;
+                const user = JSON.parse(localStorage.getItem('grifa_user'));
+                try {
+                    const db = firebase.firestore();
+                    await db.collection('chats').doc(user.uid).collection('messages').add({
+                        image: base64,
+                        sender: 'user',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    await db.collection('chats').doc(user.uid).set({
+                        lastMessage: "📷 صورة",
+                        lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        unread: true,
+                        userName: user.displayName || user.email,
+                        userEmail: user.email,
+                        userPhone: user.phone || ''
+                    }, { merge: true });
+                    input.value = '';
+                } catch (err) { console.error("Upload Error", err); }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showImagePreview(src) {
+            let viewer = document.getElementById('image-viewer-modal');
+            if (!viewer) {
+                viewer = document.createElement('div');
+                viewer.id = 'image-viewer-modal';
+                viewer.onclick = () => viewer.remove();
+                viewer.innerHTML = `
+                    <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; display:flex; justify-content:center; align-items:center;">
+                        <img src="${src}" style="max-width:90%; max-height:90%; border-radius:8px;">
+                        <button onclick="this.parentElement.parentElement.remove()" style="position:absolute; top:20px; right:20px; background:var(--error); color:#fff; border:none; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer;">&times;</button>
+                    </div>
+                `;
+                document.body.appendChild(viewer);
+            }
+        }
 
         function switchProfileTab(tabId) {
             // Update tabs

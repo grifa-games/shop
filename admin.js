@@ -418,6 +418,38 @@ async function toggleChatLock() {
     }
 }
 
+async function deleteActiveChat() {
+    if (!activeChatUserId) return;
+    if (!confirm("هل أنت متأكد من حذف هذه المحادثة بالكامل؟ لا يمكن التراجع عن هذا الإجراء.")) return;
+
+    try {
+        // Delete all messages in subcollection first
+        const messagesSnapshot = await db.collection('chats').doc(activeChatUserId).collection('messages').get();
+        const batch = db.batch();
+        messagesSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+
+        // Delete the main chat document
+        await db.collection('chats').doc(activeChatUserId).delete();
+
+        // Close the active chat view and clean up listeners
+        document.getElementById('active-chat-header').style.visibility = 'hidden';
+        document.getElementById('admin-chat-input-area').style.visibility = 'hidden';
+        document.getElementById('admin-chat-messages').innerHTML = '<p style="margin: auto; color: #444;">اختر محادثة لبدء الدردشة</p>';
+
+        if (chatDocUnsubscribe) chatDocUnsubscribe();
+        if (chatMessagesUnsubscribe) chatMessagesUnsubscribe();
+
+        activeChatUserId = null;
+        alert("تم حذف المحادثة بنجاح.");
+    } catch (e) {
+        console.error("Delete chat error", e);
+        alert("حدث خطأ أثناء حذف المحادثة.");
+    }
+}
+
 // --- Grant Order Logic ---
 function openGrantOrderModal() {
     const select = document.getElementById('grant-product-select');
