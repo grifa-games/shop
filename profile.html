@@ -135,6 +135,7 @@
             <button onclick="switchProfileTab('orders')"><i class="fa-solid fa-box"></i> طلباتي</button>
             <button onclick="switchProfileTab('coins')"><i class="fa-solid fa-coins"></i> عملاتي والمكافآت</button>
             <button onclick="switchProfileTab('wishlist')"><i class="fa-solid fa-heart"></i> قائمة الرغبات</button>
+            <button onclick="switchProfileTab('settings')"><i class="fa-solid fa-gear"></i> إعدادات الحساب</button>
             <button onclick="location.href='index.html'"><i class="fa-solid fa-arrow-right-from-bracket"></i> العودة
                 للمتجر</button>
         </aside>
@@ -210,6 +211,30 @@
                 </div>
             </div>
 
+            <!-- Settings Tab -->
+            <div id="tab-settings" class="profile-tab">
+                <h2 class="brand-font" style="margin-bottom: 25px;">إعدادات الحساب</h2>
+                <div
+                    style="background: var(--bg-dark); padding: 30px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <form id="profile-settings-form">
+                        <div class="input-group" style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">اسم
+                                المستخدم (Username)</label>
+                            <input type="text" id="settings-username" required
+                                style="width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px;">
+                        </div>
+                        <div class="input-group" style="margin-bottom: 25px;">
+                            <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">البريد
+                                الإلكتروني (غير قابل للتعديل)</label>
+                            <input type="email" id="settings-email" disabled
+                                style="width: 100%; padding: 12px; background: #050505; border: 1px solid #222; color: #666; border-radius: 8px; cursor: not-allowed;">
+                        </div>
+                        <button type="submit" class="btn-primary" style="width: auto; padding: 12px 30px;">حفظ
+                            التغييرات</button>
+                    </form>
+                </div>
+            </div>
+
         </section>
     </main>
 
@@ -222,8 +247,46 @@
             }
 
             // Populate User Data
-            document.getElementById('prof-name').textContent = user.displayName || user.email.split('@')[0];
+            const displayName = user.displayName || user.email.split('@')[0];
+            document.getElementById('prof-name').textContent = displayName;
             document.getElementById('prof-email').textContent = user.email;
+
+            // Populate Settings Form
+            document.getElementById('settings-username').value = displayName;
+            document.getElementById('settings-email').value = user.email;
+
+            // Handle Settings Save
+            document.getElementById('profile-settings-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newName = document.getElementById('settings-username').value.trim();
+                const btn = e.target.querySelector('button');
+                btn.textContent = "جاري الحفظ...";
+                btn.disabled = true;
+
+                try {
+                    const currentUser = firebase.auth().currentUser;
+                    if (currentUser) {
+                        await currentUser.updateProfile({ displayName: newName });
+
+                        // Update local user object
+                        const grifaUser = JSON.parse(localStorage.getItem('grifa_user'));
+                        grifaUser.displayName = newName;
+                        localStorage.setItem('grifa_user', JSON.stringify(grifaUser));
+
+                        document.getElementById('prof-name').textContent = newName;
+                        // update notifier from script.js logic if possible, otherwise simple alert
+                        alert("تم تحديث معلومات الحساب بنجاح!");
+                    } else {
+                        alert("يرجى تسجيل الدخول مجدداً لتحديث البيانات.");
+                    }
+                } catch (err) {
+                    console.error("Profile Update Error", err);
+                    alert("حدث خطأ أثناء تحديث البيانات.");
+                } finally {
+                    btn.textContent = "حفظ التغييرات";
+                    btn.disabled = false;
+                }
+            });
 
             // Load Coins
             const coins = localStorage.getItem('grifa_coins_' + user.email) || 0;

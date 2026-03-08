@@ -383,7 +383,8 @@
                         lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
                         unread: true,
                         userName: document.getElementById('order-fullname').value || user.email,
-                        userEmail: user.email
+                        userEmail: user.email,
+                        userPhone: document.getElementById('order-phone')?.value || ''
                     }, { merge: true });
                     notifier.show("تم إرسال الصورة بنجاح", "success");
                 } catch (err) {
@@ -394,6 +395,7 @@
         }
 
         let chatUnsubscribe = null;
+        let chatDocUnsubscribe = null;
         function initChatSystem(user) {
             const chatMessages = document.getElementById('chat-messages');
 
@@ -409,6 +411,30 @@
                     });
                     chatMessages.scrollTop = chatMessages.scrollHeight;
                 });
+
+            // Listen for chat lock state
+            chatDocUnsubscribe = db.collection('chats').doc(user.uid).onSnapshot(doc => {
+                const data = doc.data();
+                const chatInput = document.getElementById('chat-input');
+                const chatBtn = document.querySelector('.chat-input-area button');
+                const imgUpload = document.getElementById('chat-image');
+
+                if (data && data.closed) {
+                    if (chatInput) {
+                        chatInput.disabled = true;
+                        chatInput.placeholder = "المحادثة مغلقة من قبل المشرف";
+                    }
+                    if (chatBtn) chatBtn.disabled = true;
+                    if (imgUpload) imgUpload.disabled = true;
+                } else {
+                    if (chatInput) {
+                        chatInput.disabled = false;
+                        chatInput.placeholder = "اكتب رسالتك هنا...";
+                    }
+                    if (chatBtn) chatBtn.disabled = false;
+                    if (imgUpload) imgUpload.disabled = false;
+                }
+            });
         }
 
         function renderMessage(msg) {
@@ -456,6 +482,7 @@
                     lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
                     userName: document.getElementById('order-fullname').value || user.email,
                     userEmail: user.email,
+                    userPhone: document.getElementById('order-phone')?.value || '',
                     unread: true
                 }, { merge: true });
 

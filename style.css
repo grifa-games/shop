@@ -150,6 +150,7 @@ nav a.active {
     display: flex;
     flex-direction: column;
     text-align: right;
+    max-width: 140px;
 }
 
 [dir="ltr"] .user-info-text {

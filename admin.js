@@ -246,6 +246,7 @@ function initAdminChatList() {
                      style="padding: 15px; border-bottom: 1px solid #222; cursor: pointer; transition: 0.3s; position: relative;">
                     <div style="font-weight: bold; margin-bottom: 5px;">${data.userName || 'مستخدم مجهول'}</div>
                     <div style="font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${data.lastMessage || ''}</div>
+                    ${data.closed ? '<i class="fa-solid fa-lock" style="position: absolute; bottom: 15px; left: 15px; color: var(--error); font-size: 10px;"></i>' : ''}
                     ${data.unread ? '<div style="position: absolute; top: 15px; left: 15px; width: 8px; height: 8px; background: var(--error); border-radius: 50%;"></div>' : ''}
                 </div>
             `;
@@ -267,6 +268,9 @@ function initAdminChatList() {
     });
 }
 
+let currentChatClosedState = false;
+let chatDocUnsubscribe = null;
+
 function openChat(userId, userName) {
     activeChatUserId = userId;
 
@@ -280,6 +284,18 @@ function openChat(userId, userName) {
 
     // Switch active class in list
     document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+
+    // Listen for chat doc changes (phone, closed state)
+    if (chatDocUnsubscribe) chatDocUnsubscribe();
+    chatDocUnsubscribe = db.collection('chats').doc(userId).onSnapshot(doc => {
+        if (doc.exists) {
+            const data = doc.data();
+            const phoneEl = document.getElementById('chat-user-phone');
+            if (phoneEl) phoneEl.textContent = data.userPhone ? `(${data.userPhone})` : '';
+            currentChatClosedState = !!data.closed;
+            updateChatLockUI();
+        }
+    });
 
     // Listen for messages
     if (chatMessagesUnsubscribe) chatMessagesUnsubscribe();
@@ -370,6 +386,38 @@ async function sendAdminMessage() {
     }
 }
 
+function updateChatLockUI() {
+    const btn = document.getElementById('lock-chat-btn');
+    if (!btn) return;
+    if (currentChatClosedState) {
+        btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> فتح الدردشة';
+        btn.style.background = 'var(--success)';
+        btn.style.color = '#000';
+    } else {
+        btn.innerHTML = '<i class="fa-solid fa-lock"></i> إقفال الدردشة';
+        btn.style.background = 'var(--bg-dark)';
+        btn.style.color = 'var(--text-primary)';
+    }
+}
+
+async function toggleChatLock() {
+    if (!activeChatUserId) return;
+    try {
+        const newState = !currentChatClosedState;
+        await db.collection('chats').doc(activeChatUserId).set({
+            closed: newState
+        }, { merge: true });
+
+        await db.collection('chats').doc(activeChatUserId).collection('messages').add({
+            text: newState ? "🔒 تم إغلاق المحادثة من قبل المشرف" : "🔓 تم إعادة فتح المحادثة",
+            sender: 'admin',
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (e) {
+        console.error("Lock error", e);
+    }
+}
+
 // --- Grant Order Logic ---
 function openGrantOrderModal() {
     const select = document.getElementById('grant-product-select');
@@ -435,13 +483,13 @@ async function confirmGrantOrder() {
     }
 }
 
-// --- Bootstrap ---
 function initAdmin() {
     renderStats();
     renderProductsTable();
     renderOrdersTable();
     renderBannersTable();
     renderCouponsTable();
+    renderCustomersTable();
 
     // Global listener for unread count (always active)
     db.collection('chats').onSnapshot(snapshot => {
@@ -462,6 +510,42 @@ function initAdmin() {
     if (document.getElementById('messages-tab').classList.contains('active')) {
         initAdminChatList();
     }
+}
+
+
+// --- Customers Management ---
+function renderCustomersTable() {
+    const table = document.getElementById('admin-customers-table');
+    if (!table) return;
+
+    // Aggregate unique customers from orders
+    const customersMap = {};
+    orders.forEach(o => {
+        const email = o.email || 'غير معروف';
+        if (!customersMap[email]) {
+            customersMap[email] = {
+                name: o.name || 'مجهول',
+                email: email,
+                phone: o.phone || 'غير مسجل',
+                ordersCount: 0,
+                totalSpent: 0
+            };
+        }
+        customersMap[email].ordersCount++;
+        customersMap[email].totalSpent += (o.total || 0);
+    });
+
+    const customers = Object.values(customersMap);
+
+    table.innerHTML = customers.map(c => `
+        <tr>
+            <td>${c.name}</td>
+            <td>${c.email}</td>
+            <td style="color: var(--accent);">${c.phone}</td>
+            <td>${c.ordersCount}</td>
+            <td>${c.totalSpent} دج</td>
+        </tr>
+    `).join('');
 }
 
 

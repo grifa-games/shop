@@ -131,6 +131,9 @@
                     <span id="unread-count"
                         style="position: absolute; top: 0; right: 0; background: var(--error); color: white; border-radius: 50%; width: 15px; height: 15px; font-size: 0.6rem; display: none; align-items: center; justify-content: center;"></span>
                 </li>
+                <li class="tab-link" onclick="switchTab('customers', this)"><i class="fa-solid fa-users"></i>
+                    <span>زبائننا</span>
+                </li>
             </ul>
         </nav>
         <div class="sidebar-footer">
@@ -264,9 +267,18 @@
                     style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
                     <div id="active-chat-header"
                         style="padding: 15px; background: #000; border-bottom: 1px solid #222; font-weight: bold; display: flex; justify-content: space-between; align-items: center; visibility: hidden; flex-shrink: 0;">
-                        <span id="chat-user-name">اسم المستخدم</span>
-                        <button class="btn-primary" style="width: auto; padding: 5px 15px; font-size: 0.8rem;"
-                            onclick="openGrantOrderModal()">إعطاء طلبية</button>
+                        <div>
+                            <span id="chat-user-name">اسم المستخدم</span>
+                            <small id="chat-user-phone"
+                                style="color: var(--accent); margin-right: 10px; font-weight: normal;"></small>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button id="lock-chat-btn" class="btn-primary"
+                                style="width: auto; padding: 5px 15px; font-size: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-primary);"
+                                onclick="toggleChatLock()"><i class="fa-solid fa-lock"></i> إقفال الدردشة</button>
+                            <button class="btn-primary" style="width: auto; padding: 5px 15px; font-size: 0.8rem;"
+                                onclick="openGrantOrderModal()">إعطاء طلبية</button>
+                        </div>
                     </div>
                     <div id="admin-chat-messages"
                         style="flex: 1; overflow-y: scroll; padding: 20px; display: flex; flex-direction: column; gap: 12px; background: #0a0a0a;">
@@ -281,6 +293,27 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Customers Section -->
+        <section id="customers-tab" class="admin-tab">
+            <header class="admin-header">
+                <h1>قائمة زبائننا</h1>
+            </header>
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>رقم الهاتف</th>
+                            <th>إجمالي عدد الطلبات</th>
+                            <th>القيمة الإجمالية</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-customers-table"></tbody>
+                </table>
             </div>
         </section>
     </main>
