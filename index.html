@@ -40,8 +40,9 @@
                 <button class="icon-btn" id="lang-toggle" onclick="toggleLang()">EN</button>
 
                 <div class="search-box">
-                    <input type="text" data-i18n-placeholder="search_placeholder" oninput="handleSearch(event)">
+                    <input type="text" data-i18n-placeholder="search_placeholder" oninput="handleSearchLive(event)">
                     <i class="fa-solid fa-magnifying-glass"></i>
+                    <div class="live-search-results" id="live-search-results"></div>
                 </div>
 
                 <button class="icon-btn" onclick="goToCheckout()">
@@ -49,11 +50,19 @@
                     <span class="cart-count">0</span>
                 </button>
 
-                <div id="user-profile">
-                    <a href="login.html" class="icon-btn" id="login-link"><i class="fa-solid fa-user-plus"></i></a>
-                    <span id="user-name" style="font-size:0.8rem; display:none; margin-right:5px"></span>
-                    <button class="icon-btn" id="logout-btn" style="display:none;" onclick="logout()"><i
-                            class="fa-solid fa-right-from-bracket"></i></button>
+                <div class="user-profile-dropdown" id="user-dropdown-wrapper" onclick="toggleUserMenu(event)">
+                    <div class="user-info-text">
+                        <span class="welcome-label" data-i18n="welcome">مرحباً</span>
+                        <strong class="user-name-display" id="user-name-display" data-i18n="login_register">تسجيل دخول /
+                            تسجيل</strong>
+                    </div>
+                    <div class="user-avatar">
+                        <i class="fa-regular fa-user"></i>
+                    </div>
+
+                    <div class="dropdown-menu-list" id="dropdown-menu-list">
+                        <!-- Menu items will be injected by JS depending on auth state -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -181,6 +190,39 @@
         </div>
     </div>
 
+    <!-- Quick View Modal (Pro Feat) -->
+    <div id="quick-view-modal" class="modal">
+        <div class="modal-content quick-view-content"
+            style="max-width: 800px; padding: 0; overflow: hidden; display: flex;">
+            <span class="close" onclick="toggleModal('quick-view-modal')"
+                style="z-index: 10; color: #fff; background: rgba(0,0,0,0.5); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; top: 15px; left: 15px;">&times;</span>
+
+            <div id="qv-img"
+                style="flex: 1; min-height: 400px; background-size: cover; background-position: center; border-right: 1px solid var(--border-color); position: relative;">
+                <div class="qv-overlay"></div>
+            </div>
+
+            <div
+                style="flex: 1; padding: 40px; display: flex; flex-direction: column; justify-content: center; position: relative;">
+                <h2 id="qv-title" class="brand-font" style="font-size: 1.8rem; margin-bottom: 10px;">Product Name</h2>
+                <div class="status-tag pending" id="qv-category" style="display: table; margin-bottom: 20px;">Category
+                </div>
+
+                <p style="color: var(--text-secondary); margin-bottom: 30px; font-size: 0.95rem; line-height: 1.8;">
+                    تسليم فوري ومضمون لجميع مفاتيح الألعاب والأكواد الرقمية. استمتع بتجربة لعب لا نهائية مع أفضل العروض
+                    المتاحة حصريًا على متجر GRIFA للبطاقات.
+                </p>
+
+                <div id="qv-price" class="price" style="font-size: 2.2rem; margin-bottom: 30px;">0 دج</div>
+
+                <button class="btn-primary" id="qv-add-btn"
+                    style="padding: 18px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 15px;">
+                    <i class="fa-solid fa-cart-plus"></i> <span data-i18n="add_to_cart">إضافة إلى السلة</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer>
         <div class="container footer-grid">
@@ -189,8 +231,8 @@
                 <p class="footer-desc" data-i18n="footer_desc"></p>
                 <div class="social-icons">
                     <a href="#"><i class="fa-brands fa-twitter"></i></a>
-                    <a href="#"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="#"><i class="fa-brands fa-discord"></i></a>
+                    <a href="https://www.instagram.com/grifa__games/"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://discord.gg/6GhNTRhd9"><i class="fa-brands fa-discord"></i></a>
                 </div>
             </div>
             <div class="footer-links">

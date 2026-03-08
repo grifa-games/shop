@@ -105,6 +105,16 @@
                 </div>
             </div>
 
+            <div class="coins-section" id="coins-section"
+                style="display: none; margin-top: 15px; padding: 15px; background: rgba(156, 240, 50, 0.05); border: 1px dashed var(--accent); border-radius: 8px;">
+                <p style="margin-bottom: 10px; font-size: 0.9rem;">لديك <strong id="user-coins-display"
+                        style="color: var(--accent);">0</strong> عملة ذهبية! (كل 100 عملة = 100 دج خصم)</p>
+                <div class="input-group" style="display:flex; gap:10px; margin-bottom: 0;">
+                    <input type="number" id="redeem-coins-input" placeholder="عدد العملات للاستخدام" min="0">
+                    <button class="btn-primary" style="width:auto" onclick="applyCoins()">استخدام</button>
+                </div>
+            </div>
+
             <div
                 style="display:flex; justify-content:space-between; margin-top:20px; font-size:1.2rem; font-weight:800;">
                 <span>الإجمالي:</span>
@@ -179,7 +189,8 @@
                             <!-- Messages will appear here -->
                             <div class="msg admin"
                                 style="background: rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 12px 12px 0 12px; align-self: flex-start; max-width: 80%; font-size: 0.9rem;">
-                                مرحباً بك! يرجى إرسال صورة وصل الدفع (بريدي موب أو CCP) هنا وسأقوم بتفعيل طلبك فوراً.
+                                مرحباً بك! يرجى إرسال صورة وصل الدفع (بريدي موب أو CCP أو برقم الهاتف) هنا وسأقوم بتفعيل
+                                طلبك فوراً.
                             </div>
                         </div>
                         <div class="chat-input-area"
@@ -202,7 +213,7 @@
                 <div id="payment-card-section" style="display: none;">
                     <div class="card-visual">
                         <div class="input-group">
-                            <label>رقم البطاقة (البطاقة الذهبية تبدأ بـ 6074)</label>
+                            <label>رقم البطاقة (البطاقة الذهبية تبدأ بـ 6280 او 6074)</label>
                             <input type="text" id="card-number" placeholder="XXXX XXXX XXXX XXXX" maxlength="19"
                                 required>
                         </div>
@@ -581,7 +592,14 @@
             const cart = currentState.cart;
             const subtotal = cart.reduce((s, i) => s + i.price, 0);
             const discount = window.appliedCoupon ? (subtotal * window.appliedCoupon.discount / 100) : 0;
-            const finalTotal = subtotal - discount;
+            const coinDiscount = window.appliedCoins || 0;
+            const finalTotal = Math.max(0, subtotal - discount - coinDiscount);
+
+            // Earn and deduct coins
+            const earnedCoins = Math.floor(finalTotal * 0.05); // 5% cashback in coins
+            let userStoredCoins = parseInt(localStorage.getItem('grifa_coins_' + user.email) || 0);
+            userStoredCoins = userStoredCoins - coinDiscount + earnedCoins;
+            localStorage.setItem('grifa_coins_' + user.email, userStoredCoins.toString());
 
             const orderData = {
                 id: 'GF-' + Math.floor(Math.random() * 9000 + 1000),
@@ -591,7 +609,8 @@
                 phone: document.getElementById('order-phone').value,
                 items: cart,
                 total: finalTotal,
-                discount: discount,
+                discount: discount + coinDiscount,
+                earnedCoins: earnedCoins,
                 status: 'completed',
                 date: new Date().toLocaleString('ar-DZ'),
                 payment: 'Edahabia Pay',
@@ -633,9 +652,13 @@
                     </div>
 
                     <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
-                    <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; color: var(--accent);">
+                    <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; color: var(--accent); margin-bottom: 10px;">
                         <span>المبلغ النهائي:</span>
                         <span>${orderData.total} دج</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #ffd700;">
+                        <span><i class="fa-solid fa-coins"></i> عملات مكتسبة:</span>
+                        <span>+${orderData.earnedCoins} عملة ذهبية</span>
                     </div>
                 </div>
 
@@ -692,11 +715,13 @@
                 const cart = currentState.cart;
                 const subtotal = cart.reduce((s, i) => s + i.price, 0);
                 const discountAmount = (subtotal * coupon.discount) / 100;
-                const newTotal = subtotal - discountAmount;
+                let newTotal = subtotal - discountAmount;
+                const coinDiscount = window.appliedCoins || 0;
+                newTotal -= coinDiscount;
 
                 document.getElementById('final-total').innerHTML = `
                     <span style="text-decoration: line-through; color: var(--text-secondary); font-size: 0.9rem; margin-left: 10px;">${subtotal} دج</span>
-                    <span>${newTotal} دج</span>
+                    <span>${Math.max(0, newTotal)} دج</span>
                 `;
                 notifier.show(`تم تطبيق الكوبون بنجاح! خصم ${coupon.discount}%`, "success");
 
@@ -706,6 +731,53 @@
                 notifier.show("كود الخصم غير صالح أو منتهي الصلاحية", "error");
             }
         }
+        function applyCoins() {
+            const user = JSON.parse(localStorage.getItem('grifa_user'));
+            if (!user) return;
+            const coinsToRedeem = parseInt(document.getElementById('redeem-coins-input').value) || 0;
+            const userStoredCoins = parseInt(localStorage.getItem('grifa_coins_' + user.email) || 0);
+
+            if (coinsToRedeem <= 0) return;
+            if (coinsToRedeem > userStoredCoins) {
+                notifier.show("ليس لديك رصيد عملات كافي!", "error");
+                return;
+            }
+
+            const cart = currentState.cart;
+            let subtotal = cart.reduce((s, i) => s + i.price, 0);
+            const couponDiscount = window.appliedCoupon ? (subtotal * window.appliedCoupon.discount / 100) : 0;
+            subtotal -= couponDiscount;
+
+            const discountAmount = coinsToRedeem;
+            if (discountAmount > subtotal) {
+                notifier.show("قيمة الخصم بالعملات أكبر من قيمة الطلب!", "error");
+                return;
+            }
+
+            let newTotal = subtotal - discountAmount;
+            window.appliedCoins = coinsToRedeem;
+
+            // Adjust display total showing original total (before any discount) and new total
+            const originalTotal = cart.reduce((s, i) => s + i.price, 0);
+            document.getElementById('final-total').innerHTML = `
+                <span style="text-decoration: line-through; color: var(--text-secondary); font-size: 0.9rem; margin-left: 10px;">${originalTotal} دج</span>
+                <span>${Math.max(0, newTotal)} دج</span>
+            `;
+            notifier.show(`تم استخدام ${coinsToRedeem} عملة وخصم ${discountAmount} دج!`, "success");
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('grifa_user'));
+            if (user) {
+                const coinsSection = document.getElementById('coins-section');
+                const coinsDisplay = document.getElementById('user-coins-display');
+                if (coinsSection && coinsDisplay) {
+                    coinsSection.style.display = 'block';
+                    coinsDisplay.textContent = localStorage.getItem('grifa_coins_' + user.email) || 0;
+                }
+            }
+        });
+
         function showImagePreview(src) {
             const modal = document.getElementById('image-viewer-modal');
             document.getElementById('full-image-preview').src = src;

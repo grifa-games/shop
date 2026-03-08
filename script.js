@@ -71,7 +71,19 @@ const translations = {
         status_pending: "قيد الانتظار",
         status_processing: "جاري التجهيز",
         status_shipped: "تم الشحن",
-        status_completed: "اكتمل"
+        status_completed: "اكتمل",
+
+        // --- Added for Dropdown ---
+        welcome: "مرحباً",
+        login_register: "تسجيل دخول / تسجيل",
+        my_orders_drop: "الطلبيات الخاصة بي",
+        my_coins: "عملاتي",
+        my_messages: "مركز الرسائل",
+        my_wishlist: "قائمة الرغبات",
+        my_coupons: "كوبوناتي",
+        logout: "تسجيل الخروج",
+        login_btn: "تسجيل الدخول",
+        register_btn: "إنشاء حساب"
     },
     en: {
         store_title: "GRIFA GAMES | #1 Game Store",
@@ -109,7 +121,19 @@ const translations = {
         status_pending: "Pending",
         status_processing: "Processing",
         status_shipped: "Shipped",
-        status_completed: "Completed"
+        status_completed: "Completed",
+
+        // --- Added for Dropdown ---
+        welcome: "Welcome",
+        login_register: "Login / Register",
+        my_orders_drop: "My Orders",
+        my_coins: "My Coins",
+        my_messages: "Message Center",
+        my_wishlist: "My Wishlist",
+        my_coupons: "My Coupons",
+        logout: "Logout",
+        login_btn: "Login",
+        register_btn: "Create Account"
     }
 };
 
@@ -242,7 +266,12 @@ function renderProducts() {
 
     container.innerHTML = displayProducts.map(p => `
         <div class="product-card">
-            <div class="product-img" style="background-image: url('${p.img}')"></div>
+            <div class="product-img-wrapper" onclick="openQuickView(${p.id})">
+                <div class="product-img" style="background-image: url('${p.img}')"></div>
+                <div class="quick-view-overlay">
+                    <button class="quick-view-btn"><i class="fa-solid fa-eye"></i></button>
+                </div>
+            </div>
             <div class="product-info">
                 <h3>${p.name}</h3>
                 <div class="price">${p.price} ${translations[currentState.lang].currency}</div>
@@ -278,9 +307,68 @@ function setCategory(cat) {
     renderProducts();
 }
 
-function handleSearch(e) {
-    currentState.searchQuery = e.target.value;
+function handleSearchLive(e) {
+    const query = e.target.value.toLowerCase().trim();
+    const resultsContainer = document.getElementById('live-search-results');
+
+    // Also trigger main category search to keep it synced
+    currentState.searchQuery = query;
     renderProducts();
+
+    if (!query) {
+        if (resultsContainer) resultsContainer.classList.remove('show');
+        return;
+    }
+
+    const filtered = currentState.products.filter(p => p.name.toLowerCase().includes(query)).slice(0, 5); // Max 5 results
+
+    if (resultsContainer) {
+        if (filtered.length === 0) {
+            resultsContainer.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--text-secondary);">${currentState.lang === 'ar' ? "لا يوجد نتائج" : "No results"}</div>`;
+        } else {
+            resultsContainer.innerHTML = filtered.map(p => `
+                <div class="live-search-item" onclick="openQuickView(${p.id})">
+                    <div class="live-search-img" style="background-image: url('${p.img}')"></div>
+                    <div class="live-search-info">
+                        <h4>${p.name}</h4>
+                        <p class="price">${p.price} ${translations[currentState.lang].currency}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+        resultsContainer.classList.add('show');
+    }
+}
+
+// --- Quick View Modal ---
+function openQuickView(id) {
+    const product = currentState.products.find(p => p.id === id);
+    if (!product) return;
+
+    const imgEl = document.getElementById('qv-img');
+    const titleEl = document.getElementById('qv-title');
+    const catEl = document.getElementById('qv-category');
+    const priceEl = document.getElementById('qv-price');
+    const addBtn = document.getElementById('qv-add-btn');
+
+    if (imgEl) imgEl.style.backgroundImage = `url('${product.img}')`;
+    if (titleEl) titleEl.textContent = product.name;
+    if (catEl) catEl.textContent = translations[currentState.lang].categories[product.cat] || product.cat;
+    if (priceEl) priceEl.textContent = `${product.price} ${translations[currentState.lang].currency}`;
+
+    if (addBtn) {
+        // Redefine onclick to add this specific product
+        addBtn.onclick = function () {
+            addToCart(product.id);
+            toggleModal('quick-view-modal');
+        };
+    }
+
+    toggleModal('quick-view-modal');
+
+    // Close live search if it was open
+    const liveSearch = document.getElementById('live-search-results');
+    if (liveSearch) liveSearch.classList.remove('show');
 }
 
 // --- Shop & Filter UI Logic ---
@@ -445,20 +533,81 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateCartBadge();
 
-    // Check for user
+    // Handle User Dropdown Rendering
     const user = JSON.parse(localStorage.getItem('grifa_user'));
-    if (user) {
-        const loginLink = document.getElementById('login-link');
-        const userName = document.getElementById('user-name');
-        const logoutBtn = document.getElementById('logout-btn');
-        if (loginLink) loginLink.style.display = 'none';
-        if (userName) {
-            userName.style.display = 'block';
-            userName.textContent = user.displayName || user.email.split('@')[0];
-        }
-        if (logoutBtn) logoutBtn.style.display = 'block';
+    const t = translations[currentState.lang];
+    const nameDisplay = document.getElementById('user-name-display');
+    const menuList = document.getElementById('dropdown-menu-list');
+
+    if (user && nameDisplay && menuList) {
+        // Authenticated UI
+        const displayName = user.displayName || user.email.split('@')[0];
+        nameDisplay.textContent = displayName;
+
+        menuList.innerHTML = `
+            <ul>
+                <li><a href="profile.html#orders"><i class="fa-solid fa-box"></i> <span>${t.my_orders_drop}</span></a></li>
+                <li><a href="profile.html#coins"><i class="fa-solid fa-wallet"></i> <span>${t.my_coins}</span></a></li>
+                <li><a href="profile.html#messages"><i class="fa-solid fa-envelope"></i> <span>${t.my_messages}</span></a></li>
+                <li><a href="checkout.html"><i class="fa-solid fa-credit-card"></i> <span>${t.checkout_title}</span></a></li>
+                <li><a href="profile.html#wishlist"><i class="fa-solid fa-heart"></i> <span>${t.my_wishlist}</span></a></li>
+                <li><a href="profile.html#coupons"><i class="fa-solid fa-ticket"></i> <span>${t.my_coupons}</span></a></li>
+                <li class="divider"></li>
+                <li><a href="#" class="logout-link" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> <span>${t.logout}</span></a></li>
+            </ul>
+        `;
+    } else if (nameDisplay && menuList) {
+        // Unauthenticated UI
+        nameDisplay.textContent = t.login_register;
+
+        menuList.innerHTML = `
+            <div class="auth-buttons-container">
+                <a href="login.html" class="btn-primary" style="text-align: center; display: block; filter: brightness(1.2); box-shadow: 0 5px 15px rgba(171, 255, 0, 0.2);">${t.login_btn}</a>
+                <a href="login.html" style="text-align: center; display: block; border: 1px solid var(--border-color); padding: 14px 28px; border-radius: 10px; color: var(--text-primary); text-decoration: none; font-weight: 700;">${t.register_btn}</a>
+            </div>
+            <ul>
+                <li class="divider"></li>
+                <li><a href="#" onclick="toggleModal('tracking-modal')"><i class="fa-solid fa-box"></i> <span>${t.my_orders_drop}</span></a></li>
+                <li><a href="#"><i class="fa-solid fa-envelope"></i> <span>${t.my_messages}</span></a></li>
+            </ul>
+        `;
     }
 });
+
+// User Dropdown toggle handler
+function toggleUserMenu(e) {
+    e.stopPropagation(); // prevent closing immediately
+    const dropdown = document.getElementById('dropdown-menu-list');
+    if (dropdown) dropdown.classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    // User Profile Dropdown handling
+    const dropdown = document.getElementById('dropdown-menu-list');
+    const wrapper = document.getElementById('user-dropdown-wrapper');
+    if (dropdown && dropdown.classList.contains('show') && !wrapper.contains(e.target)) {
+        dropdown.classList.remove('show');
+    }
+
+    // Live Search handling
+    const liveSearch = document.getElementById('live-search-results');
+    if (liveSearch && liveSearch.classList.contains('show') && !e.target.closest('.search-box')) {
+        liveSearch.classList.remove('show');
+    }
+});
+
+function logout() {
+    if (window.auth) {
+        window.auth.signOut().then(() => {
+            localStorage.removeItem('grifa_user');
+            window.location.reload();
+        }).catch(err => alert(err.message));
+    } else {
+        localStorage.removeItem('grifa_user');
+        window.location.reload();
+    }
+}
 
 /**
  * Shared Email System (EmailJS)

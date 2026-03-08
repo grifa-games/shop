@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حسابي - GRIFA Games</title>
+    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js" defer></script>
+    <script src="auth.js" defer></script>
+
+    <style>
+        .profile-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 30px;
+            padding: 40px 20px;
+            min-height: 70vh;
+        }
+
+        .profile-sidebar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            height: fit-content;
+        }
+
+        .profile-sidebar button {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            text-align: right;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .profile-sidebar button:hover,
+        .profile-sidebar button.active {
+            background: rgba(156, 240, 50, 0.1);
+            color: var(--accent);
+        }
+
+        .profile-sidebar button i {
+            font-size: 1.2rem;
+            width: 25px;
+        }
+
+        .profile-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 30px;
+        }
+
+        .profile-tab {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .profile-tab.active {
+            display: block;
+        }
+
+        .coin-balance-card {
+            background: linear-gradient(135deg, rgba(156, 240, 50, 0.1), rgba(156, 240, 50, 0.05));
+            border: 1px dashed var(--accent);
+            border-radius: var(--radius);
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .coin-balance-card h1 {
+            font-size: 3rem;
+            color: var(--accent);
+            margin: 10px 0;
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .user-header-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .user-header-info .avatar-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--bg-dark);
+            border: 2px solid var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+            .profile-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header
+        style="background:var(--bg-card); padding:20px; border-bottom:1px solid var(--border-color); text-align:center;">
+        <h1 class="brand-font" onclick="location.href='index.html'" style="cursor:pointer">GRIFA <span>GAMES</span></h1>
+    </header>
+
+    <main class="container profile-container">
+        <!-- Sidebar -->
+        <aside class="profile-sidebar">
+            <button class="active" onclick="switchProfileTab('dashboard')"><i class="fa-solid fa-border-all"></i> لوحة
+                التحكم</button>
+            <button onclick="switchProfileTab('orders')"><i class="fa-solid fa-box"></i> طلباتي</button>
+            <button onclick="switchProfileTab('coins')"><i class="fa-solid fa-coins"></i> عملاتي والمكافآت</button>
+            <button onclick="switchProfileTab('wishlist')"><i class="fa-solid fa-heart"></i> قائمة الرغبات</button>
+            <button onclick="location.href='index.html'"><i class="fa-solid fa-arrow-right-from-bracket"></i> العودة
+                للمتجر</button>
+        </aside>
+
+        <!-- Content Area -->
+        <section class="profile-content">
+
+            <!-- Dashboard Tab -->
+            <div id="tab-dashboard" class="profile-tab active">
+                <div class="user-header-info">
+                    <div class="avatar-large"><i class="fa-solid fa-user"></i></div>
+                    <div>
+                        <h2 id="prof-name" class="brand-font" style="margin-bottom: 5px;">User Name</h2>
+                        <p id="prof-email" style="color: var(--text-secondary);">user@email.com</p>
+                    </div>
+                </div>
+                <h3 class="brand-font" style="margin-bottom: 20px;">نظرة عامة</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div
+                        style="background: var(--bg-dark); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+                        <i class="fa-solid fa-box"
+                            style="font-size: 2rem; color: var(--text-secondary); margin-bottom: 10px;"></i>
+                        <h4 style="margin: 0; font-size: 1.2rem;" id="dash-orders-count">0</h4>
+                        <p style="color: var(--text-secondary); margin: 5px 0 0 0;">إجمالي الطلبات</p>
+                    </div>
+                    <div
+                        style="background: var(--bg-dark); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+                        <i class="fa-solid fa-coins"
+                            style="font-size: 2rem; color: var(--accent); margin-bottom: 10px;"></i>
+                        <h4 style="margin: 0; font-size: 1.2rem; color: var(--accent);" id="dash-coins-count">0</h4>
+                        <p style="color: var(--text-secondary); margin: 5px 0 0 0;">رصيد العملات</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="tab-orders" class="profile-tab">
+                <h2 class="brand-font" style="margin-bottom: 25px;">تاريخ الطلبات</h2>
+                <div id="orders-list-container">
+                    <!-- Orders injected dynamically -->
+                    <p style="color: var(--text-secondary); text-align: center; padding: 40px;">جاري تحميل الطلبات...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Coins Tab -->
+            <div id="tab-coins" class="profile-tab">
+                <h2 class="brand-font" style="margin-bottom: 25px;">محفظة العملات الذهبية</h2>
+
+                <div class="coin-balance-card">
+                    <i class="fa-solid fa-coins" style="font-size: 3rem; color: #ffd700;"></i>
+                    <h1 id="prof-coins-bal">0</h1>
+                    <p style="color: var(--text-primary); font-size: 1.1rem; font-weight: bold;">عملة GRIFA</p>
+                    <p style="color: var(--text-secondary); margin-top: 15px; font-size: 0.9rem;">يمكنك استخدام عملاتك
+                        للحصول على خصم مباشر في سلة المشتريات. (كل 1 عملة = 1 دج خصم)</p>
+                </div>
+
+                <h3 class="brand-font" style="margin-bottom: 15px; font-size: 1.2rem;">كيف تربح العملات؟</h3>
+                <ul style="color: var(--text-secondary); line-height: 1.8; list-style-position: inside;">
+                    <li>احصل على 5% كاش باك كعملات ذهبية على كل عملية شراء ناجحة.</li>
+                    <li>المشاركة في المسابقات والفعاليات الأسبوعية على الديسكورد.</li>
+                </ul>
+            </div>
+
+            <!-- Wishlist Tab -->
+            <div id="tab-wishlist" class="profile-tab">
+                <h2 class="brand-font" style="margin-bottom: 25px;">قائمة الرغبات</h2>
+                <div style="text-align: center; padding: 50px 0; color: var(--text-secondary);">
+                    <i class="fa-regular fa-heart" style="font-size: 3rem; margin-bottom: 20px;"></i>
+                    <p>قائمة الرغبات الخاصة بك فارغة حالياً.</p>
+                    <button class="btn-primary" style="margin-top: 20px; width: auto;"
+                        onclick="location.href='index.html'">تصفح الألعاب</button>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('grifa_user'));
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Populate User Data
+            document.getElementById('prof-name').textContent = user.displayName || user.email.split('@')[0];
+            document.getElementById('prof-email').textContent = user.email;
+
+            // Load Coins
+            const coins = localStorage.getItem('grifa_coins_' + user.email) || 0;
+            document.getElementById('prof-coins-bal').textContent = coins;
+            document.getElementById('dash-coins-count').textContent = coins;
+
+            // Load Orders from LocalStorage (or Firebase if adapted)
+            const orders = JSON.parse(localStorage.getItem('grifa_orders')) || [];
+            const userOrders = orders.filter(o => o.email === user.email || o.userId === user.uid);
+
+            document.getElementById('dash-orders-count').textContent = userOrders.length;
+
+            const ordersList = document.getElementById('orders-list-container');
+            if (userOrders.length === 0) {
+                ordersList.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 40px;">لا يوجد لديك أي طلبات سابقة.</p>`;
+            } else {
+                ordersList.innerHTML = userOrders.sort((a, b) => new Date(b.date) - new Date(a.date)).map(o => `
+                    <div style="background: var(--bg-dark); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h4 style="margin: 0 0 5px 0; font-size: 1.1rem; color: var(--accent);">${o.id}</h4>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">${o.date} • ${o.items.length} منتجات</p>
+                        </div>
+                        <div>
+                            <span class="status-tag ${o.status}">${o.status === 'completed' ? 'اكتمل' : (o.status === 'pending' ? 'أونلاين/قيد الإرسال' : o.status)}</span>
+                        </div>
+                        <div style="font-weight: bold; font-size: 1.1rem;">
+                            ${o.total} دج
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // check hash
+            if (window.location.hash) {
+                const target = window.location.hash.replace('#', '');
+                switchProfileTab(target);
+            }
+        });
+
+        function switchProfileTab(tabId) {
+            // Update tabs
+            document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+            const tab = document.getElementById('tab-' + tabId);
+            if (tab) tab.classList.add('active');
+
+            // Update sidebar buttons
+            document.querySelectorAll('.profile-sidebar button').forEach(b => b.classList.remove('active'));
+            const btn = document.querySelector(`.profile-sidebar button[onclick="switchProfileTab('${tabId}')"]`);
+            if (btn) btn.classList.add('active');
+
+            window.location.hash = tabId;
+        }
+    </script>
+</body>
+
+</html>
