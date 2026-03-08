@@ -523,22 +523,30 @@ function renderGiftCardsTable() {
     const table = document.getElementById('admin-giftcards-table');
     if (!table) return;
 
-    table.innerHTML = giftcards.map(g => `
+    table.innerHTML = giftcards.map(g => {
+        // Fallback for older cards that don't have maxUses
+        const currentU = g.currentUses || (g.used ? 1 : 0);
+        const maxU = g.maxUses || 1;
+        const isDepleted = currentU >= maxU;
+
+        return `
         <tr>
             <td style="font-family: monospace; font-weight: bold; color: var(--accent);">${g.code}</td>
             <td>${g.value} عملة</td>
-            <td><span class="status-tag ${g.used ? 'deleted' : 'completed'}">${g.used ? 'مستعملة' : 'فعالة'}</span></td>
+            <td><span class="status-tag ${isDepleted ? 'deleted' : 'completed'}">${isDepleted ? 'مستنفدة' : currentU + ' من ' + maxU}</span></td>
             <td>${new Date(g.createdAt).toLocaleDateString('ar-DZ')}</td>
             <td>
                 <button class="action-btn delete" onclick="deleteGiftCard('${g.code}')"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
 
 function openAddGiftCardModal() {
     document.getElementById('gc-code-input').value = '';
     document.getElementById('gc-value-input').value = '';
+    const usesInput = document.getElementById('gc-uses-input');
+    if (usesInput) usesInput.value = '1';
     document.getElementById('giftcard-modal').classList.add('show');
 }
 
@@ -554,6 +562,9 @@ document.getElementById('giftcard-form').addEventListener('submit', async (e) =>
     const valStr = document.getElementById('gc-value-input').value;
     const valNum = parseInt(valStr);
 
+    const usesStr = document.getElementById('gc-uses-input').value;
+    const maxUses = parseInt(usesStr) || 1;
+
     if (giftcards.find(g => g.code === codeStr)) {
         alert("هذا الكود موجود مسبقاً!");
         return;
@@ -562,7 +573,9 @@ document.getElementById('giftcard-form').addEventListener('submit', async (e) =>
     const newGift = {
         code: codeStr,
         value: valNum,
-        used: false,
+        maxUses: maxUses,
+        currentUses: 0,
+        used: false, // Legacy fallback
         createdAt: new Date().toISOString()
     };
 

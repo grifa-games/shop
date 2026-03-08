@@ -365,10 +365,18 @@
                             <option value="Xbox">إكس بوكس</option>
                             <option value="Nintendo">نينتندو</option>
                             <option value="Gift Cards">بطاقات شحن</option>
+                            <option value="PC Games">ألعاب كمبيوتر</option>
+                            <option value="Mobile Games">ألعاب موبايل</option>
+                            <option value="Subscriptions">اشتراكات</option>
+                            <option value="Software">برامج</option>
                         </select>
                     </div>
                 </div>
-                <div class="input-group"><label>رابط الصورة</label><input type="text" required></div>
+                <div class="input-row">
+                    <div class="input-group"><label>رابط الصورة</label><input type="text" required></div>
+                    <div class="input-group"><label>تاريخ إنتهاء عرض الفلاش (اختياري)</label><input
+                            type="datetime-local" id="product-flash-sale"></div>
+                </div>
                 <div class="input-group">
                     <label>محتوى التسليم (يرسل للعميل في الإيميل)</label>
                     <textarea required></textarea>
@@ -417,9 +425,16 @@
                     <label>كود البطاقة (اتركه فارغاً لتوليد عشوائي)</label>
                     <input type="text" id="gc-code-input" placeholder="GIFT-XXXX-XXXX">
                 </div>
-                <div class="input-group">
-                    <label>القيمة (عدد العملات)</label>
-                    <input type="number" id="gc-value-input" required placeholder="مثال: 500عملة = 500دج">
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>القيمة (عدد العملات)</label>
+                        <input type="number" id="gc-value-input" required placeholder="مثال: 500عملة = 500دج">
+                    </div>
+                    <div class="input-group">
+                        <label>عدد مرات الاستخدام</label>
+                        <input type="number" id="gc-uses-input" required value="1" min="1"
+                            placeholder="مثال: 10 لاستخدام الكود 10 مرات">
+                    </div>
                 </div>
                 <button type="submit" class="btn-primary w-full">إصدار البطاقة وحفظها</button>
             </form>

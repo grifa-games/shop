@@ -413,22 +413,34 @@
                         }
                     } catch (err) { }
 
+                    // Handle legacy cards without maxUses as 1 use cards
+                    const maxU = gift.maxUses || 1;
+                    const curU = gift.currentUses || (gift.used ? 1 : 0);
+
                     if (!gift) {
                         msgEl.textContent = "❌ كود البطاقة غير صحيح أو غير موجود.";
                         msgEl.style.color = "var(--error)";
-                    } else if (gift.used) {
-                        msgEl.textContent = "❌ تم استخدام هذه البطاقة مسبقاً.";
+                    } else if (curU >= maxU) {
+                        msgEl.textContent = "❌ تم استخدام هذه البطاقة مسبقاً للحد الأقصى المسموح.";
                         msgEl.style.color = "var(--error)";
                     } else {
                         // Success! Add Coins
-                        gift.used = true;
+                        gift.currentUses = curU + 1;
+                        if (gift.currentUses >= maxU) {
+                            gift.used = true; // Set to true if it reached max for backward compatibility in parts that check `used` boolean
+                        }
 
                         // Update Data
                         if (isFirebase) {
                             const db = firebase.firestore();
-                            await db.collection('gift_cards').doc(code).update({ used: true, usedBy: user.email, usedAt: new Date().toISOString() });
+                            await db.collection('gift_cards').doc(code).update({
+                                currentUses: gift.currentUses,
+                                used: gift.used || false,
+                                lastUsedBy: user.email,
+                                lastUsedAt: new Date().toISOString()
+                            });
                         } else {
-                            giftcards = giftcards.map(g => g.code === code ? { ...g, used: true } : g);
+                            giftcards = giftcards.map(g => g.code === code ? { ...g, currentUses: gift.currentUses, used: gift.used || false } : g);
                             localStorage.setItem('grifa_giftcards', JSON.stringify(giftcards));
                         }
 
