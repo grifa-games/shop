@@ -535,6 +535,26 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
         localStorage.setItem('grifa_products', JSON.stringify(currentState.products));
     }
+
+    // Attempt to sync products from Firebase
+    try {
+        if (typeof firebase !== 'undefined') {
+            const db = firebase.firestore();
+            db.collection('products').get().then(snapshot => {
+                const fbProducts = [];
+                snapshot.forEach(doc => fbProducts.push(doc.data()));
+
+                if (fbProducts.length > 0) {
+                    currentState.products = fbProducts;
+                    localStorage.setItem('grifa_products', JSON.stringify(fbProducts));
+
+                    // Re-render UI pieces that depend on products if we updated
+                    renderProducts();
+                }
+            }).catch(e => console.error("Firebase products sync error:", e));
+        }
+    } catch (err) { console.error("Firebase not initialized?", err); }
+
     if (currentState.banners.length === 0) {
         currentState.banners = [
             { title: "اكتشف عالم الألعاب مع GRIFA", desc: "أفضل العروض والرموز الرقمية في مكان واحد", img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=1200" },

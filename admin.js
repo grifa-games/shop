@@ -88,6 +88,17 @@ document.getElementById('product-form').addEventListener('submit', (e) => {
 
     products.push(newProduct);
     localStorage.setItem('grifa_products', JSON.stringify(products));
+
+    // Sync to Firestore
+    try {
+        const db = firebase.firestore();
+        db.collection('products').doc(newProduct.id.toString()).set(newProduct).then(() => {
+            console.log("Product saved to Firebase");
+        });
+    } catch (err) {
+        console.error("Firebase sync failed, saved locally", err);
+    }
+
     renderProductsTable();
     renderStats();
     closeModal();
@@ -98,6 +109,17 @@ function deleteProduct(id) {
     if (confirm("هل أنت متأكد من حذف المنتج؟")) {
         products = products.filter(p => p.id !== id);
         localStorage.setItem('grifa_products', JSON.stringify(products));
+
+        // Remove from Firestore
+        try {
+            const db = firebase.firestore();
+            db.collection('products').doc(id.toString()).delete().then(() => {
+                console.log("Product deleted from Firebase");
+            });
+        } catch (err) {
+            console.error("Firebase delete failed", err);
+        }
+
         renderProductsTable();
         renderStats();
     }
