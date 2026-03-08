@@ -125,6 +125,9 @@
                 <li class="tab-link" onclick="switchTab('coupons', this)"><i class="fa-solid fa-ticket"></i>
                     <span>الكوبونات</span>
                 </li>
+                <li class="tab-link" onclick="switchTab('giftcards', this)"><i class="fa-solid fa-gift"></i>
+                    <span>بطاقات الهدايا</span>
+                </li>
                 <li class="tab-link" onclick="switchTab('messages', this)" id="messages-tab-link"
                     style="position: relative;">
                     <i class="fa-solid fa-comments"></i>
@@ -245,6 +248,29 @@
                         </tr>
                     </thead>
                     <tbody id="admin-coupons-table"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Gift Cards Section -->
+        <section id="giftcards-tab" class="admin-tab">
+            <header class="admin-header">
+                <h1>بطاقات الهدايا</h1>
+                <button class="btn-primary" onclick="openAddGiftCardModal()"><i class="fa-solid fa-plus"></i> إصدار
+                    بطاقة</button>
+            </header>
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>الكود</th>
+                            <th>القيمة (عملات)</th>
+                            <th>الحالة</th>
+                            <th>تاريخ الإصدار</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-giftcards-table"></tbody>
                 </table>
             </div>
         </section>
@@ -377,6 +403,25 @@
                 <div class="input-group"><label>نسبة الخصم (%)</label><input type="number" required placeholder="10">
                 </div>
                 <button type="submit" class="btn-primary w-full">حفظ الكوبون</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Gift Card Modal -->
+    <div id="giftcard-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>إصدار بطاقة هدية</h2>
+            <form id="giftcard-form">
+                <div class="input-group">
+                    <label>كود البطاقة (اتركه فارغاً لتوليد عشوائي)</label>
+                    <input type="text" id="gc-code-input" placeholder="GIFT-XXXX-XXXX">
+                </div>
+                <div class="input-group">
+                    <label>القيمة (عدد العملات)</label>
+                    <input type="number" id="gc-value-input" required placeholder="مثال: 500عملة = 500دج">
+                </div>
+                <button type="submit" class="btn-primary w-full">إصدار البطاقة وحفظها</button>
             </form>
         </div>
     </div>

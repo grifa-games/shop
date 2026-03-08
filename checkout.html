@@ -170,6 +170,10 @@
                         <i class="fa-solid fa-comments"></i>
                         الدردشة مع المشرف
                     </div>
+                    <div class="method-card" onclick="selectPayment('coins')">
+                        <i class="fa-solid fa-coins"></i>
+                        الدفع بالعملات فقط
+                    </div>
                 </div>
 
                 <div class="ccp-info">
@@ -232,6 +236,19 @@
                                 <input type="password" id="card-cvv" placeholder="XXX" maxlength="3" required>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <div id="payment-coins-section" style="display: none; text-align: center; margin-top: 20px;">
+                    <div
+                        style="background: rgba(255,215,0,0.1); border: 1px dashed #ffd700; padding: 25px; border-radius: 12px;">
+                        <i class="fa-solid fa-wallet" style="font-size: 3rem; color: #ffd700; margin-bottom: 15px;"></i>
+                        <h3 class="brand-font" style="margin-bottom: 10px;">محفظتك الحالية</h3>
+                        <p style="font-size: 1.5rem; font-weight: bold; color: var(--accent); margin-bottom: 10px;">
+                            <span id="coins-total-preview">0</span> عملة ذهبية
+                        </p>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">اضغط على "الدفع المباشر بالعملات"
+                            بالأسفل ليتم الخصم تلقائياً وإرسال الطلب بشكل فوري.</p>
                     </div>
                 </div>
 
@@ -356,6 +373,10 @@
 
             // Initialize Chat
             initChatSystem(user);
+
+            // Populate preview for direct coin payment
+            const cDisplay = document.getElementById('coins-total-preview');
+            if (cDisplay) cDisplay.textContent = localStorage.getItem('grifa_coins_' + user.email) || '0';
 
             // Add Paste Listener for Images
             document.getElementById('chat-input').addEventListener('paste', (e) => {
@@ -563,9 +584,53 @@
             return true;
         }
 
-        async function step2To3() {
+        function step2To3() {
+            const activeMethod = document.querySelector('.method-card.active');
+            if (activeMethod && activeMethod.getAttribute('onclick').includes("'coins'")) {
+                confirmCoinPayment();
+                return;
+            }
             if (!validateCard()) return;
             document.getElementById('otp-modal').classList.add('show');
+        }
+
+        function confirmCoinPayment() {
+            const user = JSON.parse(localStorage.getItem('grifa_user'));
+            if (!user) return;
+            const userStoredCoins = parseInt(localStorage.getItem('grifa_coins_' + user.email) || 0);
+
+            const cart = currentState.cart;
+            const subtotal = cart.reduce((s, i) => s + i.price, 0);
+            const discount = window.appliedCoupon ? (subtotal * window.appliedCoupon.discount / 100) : 0;
+            const finalTotal = Math.max(0, subtotal - discount);
+
+            if (userStoredCoins < finalTotal) {
+                notifier.show("رصيد عملاتك أقل من المبلغ المطلوب!", "error");
+                return;
+            }
+
+            // Register this as a fully coin-paid order
+            window.appliedCoins = finalTotal;
+
+            // Just simulate a fast processing for coins
+            const modal = document.getElementById('processing-modal');
+            modal.classList.add('show');
+            const sValid = document.getElementById('step-valid');
+            const sBalance = document.getElementById('step-balance');
+            const sTransfer = document.getElementById('step-transfer');
+
+            sValid.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin step-icon"></i> جاري خصم العملات...';
+            sBalance.style.display = 'none';
+            sTransfer.style.display = 'none';
+
+            setTimeout(() => {
+                sValid.style.color = "var(--success)";
+                sValid.innerHTML = '<i class="fa-solid fa-circle-check step-icon"></i> تم تأكيد الدفع بالعملات بنجاح!';
+                setTimeout(() => {
+                    modal.classList.remove('show');
+                    submitRealOrder();
+                }, 1000);
+            }, 1500);
         }
 
         function verifyOTP() {
@@ -719,19 +784,30 @@
 
             const chatSection = document.getElementById('payment-chat-section');
             const cardSection = document.getElementById('payment-card-section');
+            const coinsSection = document.getElementById('payment-coins-section');
             const ccpInfo = document.querySelector('.ccp-info');
             const confirmBtn = document.getElementById('confirm-payment-btn');
 
             if (p === 'chat') {
                 chatSection.style.display = 'block';
                 cardSection.style.display = 'none';
+                if (coinsSection) coinsSection.style.display = 'none';
                 ccpInfo.style.display = 'none';
-                confirmBtn.style.display = 'none'; // Hide confirmation button in chat mode
+                confirmBtn.style.display = 'none';
             } else if (p === 'edahabia' || p === 'card') {
                 chatSection.style.display = 'none';
                 cardSection.style.display = 'block';
+                if (coinsSection) coinsSection.style.display = 'none';
                 ccpInfo.style.display = 'block';
                 confirmBtn.style.display = 'block';
+                confirmBtn.textContent = 'تأكيد الدفع وإرسال طلبك';
+            } else if (p === 'coins') {
+                chatSection.style.display = 'none';
+                cardSection.style.display = 'none';
+                if (coinsSection) coinsSection.style.display = 'block';
+                ccpInfo.style.display = 'none';
+                confirmBtn.style.display = 'block';
+                confirmBtn.textContent = 'الدفع المباشر بالعملات';
             }
         }
 

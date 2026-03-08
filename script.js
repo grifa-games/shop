@@ -264,21 +264,37 @@ function renderProducts() {
         return;
     }
 
-    container.innerHTML = displayProducts.map(p => `
-        <div class="product-card">
-            <div class="product-img-wrapper" onclick="openQuickView(${p.id})">
-                <div class="product-img" style="background-image: url('${p.img}')"></div>
-                <div class="quick-view-overlay">
-                    <button class="quick-view-btn"><i class="fa-solid fa-eye"></i></button>
+    container.innerHTML = displayProducts.map(p => {
+        let flashBadgeHtml = '';
+        if (p.flashSaleUntil) {
+            const endDate = new Date(p.flashSaleUntil).getTime();
+            const now = new Date().getTime();
+            if (endDate > now) {
+                flashBadgeHtml = `<div class="flash-sale-badge" data-endtime="${endDate}">
+                                    <i class="fa-solid fa-bolt"></i> ينتهي العرض قريباً
+                                    <span class="flash-timer">--:--:--</span>
+                                  </div>`;
+            }
+        }
+
+        return `
+            <div class="product-card">
+                <div class="product-img-wrapper" onclick="openQuickView(${p.id})">
+                    <div class="product-img" style="background-image: url('${p.img}')">
+                        ${flashBadgeHtml}
+                    </div>
+                    <div class="quick-view-overlay">
+                        <button class="quick-view-btn"><i class="fa-solid fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="product-info">
+                    <h3>${p.name}</h3>
+                    <div class="price">${p.price} ${translations[currentState.lang].currency}</div>
+                    <button class="btn-primary" onclick="addToCart(${p.id})">${translations[currentState.lang].add_to_cart}</button>
                 </div>
             </div>
-            <div class="product-info">
-                <h3>${p.name}</h3>
-                <div class="price">${p.price} ${translations[currentState.lang].currency}</div>
-                <button class="btn-primary" onclick="addToCart(${p.id})">${translations[currentState.lang].add_to_cart}</button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // --- Interaction Logic ---
@@ -596,6 +612,32 @@ document.addEventListener('click', (e) => {
         liveSearch.classList.remove('show');
     }
 });
+
+// --- Flash Sale Timer Logic ---
+setInterval(() => {
+    const badges = document.querySelectorAll('.flash-sale-badge');
+    badges.forEach(badge => {
+        const endTimeStr = badge.getAttribute('data-endtime');
+        if (!endTimeStr) return;
+
+        const endTime = parseInt(endTimeStr);
+        const now = new Date().getTime();
+        const distance = endTime - now;
+
+        if (distance < 0) {
+            badge.style.display = 'none';
+        } else {
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            const timerSpan = badge.querySelector('.flash-timer');
+            if (timerSpan) {
+                timerSpan.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+    });
+}, 1000);
 
 function logout() {
     if (window.auth) {

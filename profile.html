@@ -200,6 +200,17 @@
                     <li>احصل على 5% كاش باك كعملات ذهبية على كل عملية شراء ناجحة.</li>
                     <li>المشاركة في المسابقات والفعاليات الأسبوعية على الديسكورد.</li>
                 </ul>
+
+                <hr style="border-color: #333; margin: 30px 0;">
+
+                <h3 class="brand-font" style="margin-bottom: 15px; font-size: 1.2rem;">شحن بطاقة هدية (Gift Card)</h3>
+                <form id="redeem-giftcard-form" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="redeem-code-input" placeholder="GIFT-XXXX-XXXX" required
+                        style="flex: 1; min-width: 200px; padding: 12px; background: #000; border: 1px solid #333; color: var(--accent); border-radius: 8px; font-family: monospace; font-size: 1.1rem; text-transform: uppercase;">
+                    <button type="submit" class="btn-primary" style="width: auto; padding: 12px 25px;"><i
+                            class="fa-solid fa-bolt"></i> شحن الآن</button>
+                </form>
+                <p id="redeem-msg" style="margin-top: 10px; font-size: 0.9rem;"></p>
             </div>
 
             <!-- Wishlist Tab -->
@@ -376,6 +387,73 @@
                 const target = window.location.hash.replace('#', '');
                 switchProfileTab(target);
             }
+
+            // Gift Card Redemption Logic
+            document.getElementById('redeem-giftcard-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const code = document.getElementById('redeem-code-input').value.trim().toUpperCase();
+                const btn = e.target.querySelector('button');
+                const msgEl = document.getElementById('redeem-msg');
+
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق...';
+
+                try {
+                    // We attempt to load from firebase, or fallback to local storage
+                    let giftcards = JSON.parse(localStorage.getItem('grifa_giftcards')) || [];
+                    let gift = giftcards.find(g => g.code === code);
+
+                    let isFirebase = false;
+                    try {
+                        const db = firebase.firestore();
+                        const docRef = await db.collection('gift_cards').doc(code).get();
+                        if (docRef.exists) {
+                            gift = docRef.data();
+                            isFirebase = true;
+                        }
+                    } catch (err) { }
+
+                    if (!gift) {
+                        msgEl.textContent = "❌ كود البطاقة غير صحيح أو غير موجود.";
+                        msgEl.style.color = "var(--error)";
+                    } else if (gift.used) {
+                        msgEl.textContent = "❌ تم استخدام هذه البطاقة مسبقاً.";
+                        msgEl.style.color = "var(--error)";
+                    } else {
+                        // Success! Add Coins
+                        gift.used = true;
+
+                        // Update Data
+                        if (isFirebase) {
+                            const db = firebase.firestore();
+                            await db.collection('gift_cards').doc(code).update({ used: true, usedBy: user.email, usedAt: new Date().toISOString() });
+                        } else {
+                            giftcards = giftcards.map(g => g.code === code ? { ...g, used: true } : g);
+                            localStorage.setItem('grifa_giftcards', JSON.stringify(giftcards));
+                        }
+
+                        // Add coins
+                        let currentCoins = parseInt(localStorage.getItem('grifa_coins_' + user.email) || 0);
+                        currentCoins += gift.value;
+                        localStorage.setItem('grifa_coins_' + user.email, currentCoins);
+
+                        document.getElementById('prof-coins-bal').textContent = currentCoins;
+                        document.getElementById('dash-coins-count').textContent = currentCoins;
+
+                        msgEl.textContent = `✅ تم شحن ${gift.value} عملة بنجاح! مبروك.`;
+                        msgEl.style.color = "var(--success)";
+                        document.getElementById('redeem-code-input').value = '';
+                    }
+
+                } catch (err) {
+                    msgEl.textContent = "حدث خطأ غير متوقع. يرجى المحاولة لاحقاً.";
+                    msgEl.style.color = "var(--error)";
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-bolt"></i> شحن الآن';
+                    setTimeout(() => { msgEl.textContent = ''; }, 5000);
+                }
+            });
         });
 
         // Profile Chat Logic

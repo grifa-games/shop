@@ -17,6 +17,7 @@ let products = getSafeJSON('grifa_products', []);
 let orders = getSafeJSON('grifa_orders', []);
 let banners = getSafeJSON('grifa_banners', []);
 let coupons = getSafeJSON('grifa_coupons', []);
+let giftcards = getSafeJSON('grifa_giftcards', []);
 
 // --- Tab Management ---
 function switchTab(tabId, el) {
@@ -73,6 +74,7 @@ function closeModal() {
 
 document.getElementById('product-form').addEventListener('submit', (e) => {
     e.preventDefault();
+    const flashVal = document.getElementById('product-flash-sale').value;
     const newProduct = {
         id: Date.now(),
         name: e.target.elements[0].value,
@@ -80,7 +82,8 @@ document.getElementById('product-form').addEventListener('submit', (e) => {
         price: parseFloat(e.target.elements[2].value),
         cat: e.target.elements[3].value,
         img: e.target.elements[4].value,
-        delivery: e.target.elements[5].value
+        delivery: e.target.elements[5].value,
+        flashSaleUntil: flashVal ? new Date(flashVal).toISOString() : null
     };
 
     products.push(newProduct);
@@ -515,12 +518,89 @@ async function confirmGrantOrder() {
     }
 }
 
+// --- Gift Cards Management ---
+function renderGiftCardsTable() {
+    const table = document.getElementById('admin-giftcards-table');
+    if (!table) return;
+
+    table.innerHTML = giftcards.map(g => `
+        <tr>
+            <td style="font-family: monospace; font-weight: bold; color: var(--accent);">${g.code}</td>
+            <td>${g.value} عملة</td>
+            <td><span class="status-tag ${g.used ? 'deleted' : 'completed'}">${g.used ? 'مستعملة' : 'فعالة'}</span></td>
+            <td>${new Date(g.createdAt).toLocaleDateString('ar-DZ')}</td>
+            <td>
+                <button class="action-btn delete" onclick="deleteGiftCard('${g.code}')"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function openAddGiftCardModal() {
+    document.getElementById('gc-code-input').value = '';
+    document.getElementById('gc-value-input').value = '';
+    document.getElementById('giftcard-modal').classList.add('show');
+}
+
+document.getElementById('giftcard-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Generate Random code if empty
+    let codeStr = document.getElementById('gc-code-input').value.trim();
+    if (!codeStr) {
+        codeStr = 'GIFT-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+    }
+
+    const valStr = document.getElementById('gc-value-input').value;
+    const valNum = parseInt(valStr);
+
+    if (giftcards.find(g => g.code === codeStr)) {
+        alert("هذا الكود موجود مسبقاً!");
+        return;
+    }
+
+    const newGift = {
+        code: codeStr,
+        value: valNum,
+        used: false,
+        createdAt: new Date().toISOString()
+    };
+
+    giftcards.push(newGift);
+    localStorage.setItem('grifa_giftcards', JSON.stringify(giftcards));
+
+    // Try saving to firebase if possible
+    try {
+        const db = firebase.firestore();
+        await db.collection('gift_cards').doc(codeStr).set(newGift);
+    } catch (err) { console.log('Firebase write failed, saved locally.', err); }
+
+    renderGiftCardsTable();
+    closeModal();
+    alert("تم توليد بطاقة الهدية بنجاح! الكود: " + codeStr);
+});
+
+function deleteGiftCard(code) {
+    if (confirm("حذف بطاقة الهدية؟ سيتم إيقاف صلاحيتها فوراً.")) {
+        giftcards = giftcards.filter(g => g.code !== code);
+        localStorage.setItem('grifa_giftcards', JSON.stringify(giftcards));
+
+        try {
+            const db = firebase.firestore();
+            db.collection('gift_cards').doc(code).delete();
+        } catch (err) { }
+
+        renderGiftCardsTable();
+    }
+}
+
 function initAdmin() {
     renderStats();
     renderProductsTable();
     renderOrdersTable();
     renderBannersTable();
     renderCouponsTable();
+    renderGiftCardsTable();
     renderCustomersTable();
 
     // Global listener for unread count (always active)
